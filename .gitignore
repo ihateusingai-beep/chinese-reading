@@ -1,0 +1,15 @@
+# dev-only
+node_modules/
+coverage/
+.vitest/
+*.log
+
+# OS
+.DS_Store
+
+# 唔好 commit：測試期間產生嘅中間檔
+tests/.generated/
+
+# Playwright
+test-results/
+playwright-report/
