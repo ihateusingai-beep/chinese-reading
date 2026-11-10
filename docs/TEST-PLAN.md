@@ -681,12 +681,12 @@ export default defineConfig({
 | T9 Mutants | ✅ 已寫（**18 mutant**） | M1/M2/M3/M4/M5/M6/M7/M8/M9/M12/M13/M14/M15/M16/M17/M18/M19/M20 |
 | T10 Meta | ✅ 已寫（7 case） | mutant 覆蓋率 + 模組↔測試檔對齊 |
 | T11 Auth | ✅ 已寫（18 case） | Sha256（對齊 Node crypto）+ Auth 密碼 gate + `Modal.askText` |
-| T12 Hub | ✅ 已寫（20 case） | Hub 首頁 + App 路由 + 閱讀頁 + 老師模式 gate |
-| T13 TeacherUI | ✅ 已寫（17 case） | 文章庫（發佈/隱藏/刪除）+ 標詞編輯 + 設定 + 匯入匯出 |
+| T12 Hub | ✅ 已寫（21 case） | Hub 首頁 + App 路由 + 閱讀頁 + 老師模式 gate |
+| T13 TeacherUI | ✅ 已寫（21 case） | 文章庫（發佈/隱藏/刪除）+ 標詞編輯 + 設定 + 匯入匯出 |
 | Tier 2 browser | ✅ 已寫（13 case，已跑通） | `tests/browser/layout.spec.js` · Playwright Chromium（閱讀頁 / hub / 老師頁 / modal 各自跑 axe） |
 | Tier 3 實機 | ⬜ 未做 | **M1 尾必做，驗證 R1** |
 
-**目前總數**：Tier 1 = **166 tests / 14 files**；Tier 2 = 13 tests；mutant = 18 個。
+**目前總數**：Tier 1 = **171 tests / 14 files**；Tier 2 = 13 tests；mutant = 18 個。
 
 **已驗證**：
 - 2026-11-10 四輪破壞（Reader）：關咗詞優先 → T3.4–T3.7 紅；放大改 font-size → T7(S2)+T9(M13) 紅；
@@ -708,12 +708,16 @@ export default defineConfig({
   拆走 S20 兩個分支 → M17 / M18 各自捉唔到；
   拆走 S21 兩個分支（KEY_* 常數 / inline literal）→ M19 / M20 各自捉唔到；
   全部 18 個 mutant 都令對應斷言變紅。
-- 2026-11-10 **M0/M1 五輪破壞**（`tools/verify-m0m1-guard.sh`，自動做、做完自動還原）：
+- 2026-11-10 **M0/M1 九輪破壞**（`tools/verify-m0m1-guard.sh`，自動做、做完自動還原）：
   - D4 學生端唔再過濾 published → **T12.6 紅**
   - D5 唔檢查密碼就入老師模式 → **T12.18 紅**
   - D6 老師清空文章庫後又自動生返預設文章 → **T12.4 紅**
   - D7 Modal 取消時 resolve 空字串而唔係 null → **T11.2j + T11.3b 紅**
   - D8 讀音小卡唔建立 → **T3.7 紅**
+  - D9 儲存掣只喺標詞之後先出現 → **T13.2b/2c/2e/2h/2i 五條紅**
+  - D10 空內容唔阻儲存 → **T13.2i 紅**
+  - D11 字數計數器唔更新 → **T13.2j 紅**
+  - D12 字級預設掣唔會套用 → **T13.3e 紅**
 - 2026-11-10 **Tier 2 axe 捉到 4 類真問題**（全部已修）：
   `label-content-name-mismatch`（卡片／按鈕加咗 aria-label，同可見文字打架）→
   改用 `title`；`aria-dialog-name`（modal 冇 accessible name）→ `aria-labelledby="modal-title"`；

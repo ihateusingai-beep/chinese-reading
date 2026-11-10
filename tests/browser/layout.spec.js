@@ -34,7 +34,7 @@ async function openTeacher(page) {
   await openHub(page);
   await page.locator('#btn-teacher').click();
   await page.waitForSelector('.modal-input', { timeout: 15000 });
-  await page.locator('.modal-input').fill('Hcwmc');
+  await page.locator('.modal-input').fill('230714');
   await page.locator('.modal-ok').click();
   await page.waitForSelector('#teacher', { timeout: 15000 });
 }

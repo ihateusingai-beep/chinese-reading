@@ -20,7 +20,7 @@ const doc = () => ctx.win.document;
 const articles = () => ctx.api.Store.getArticles();
 const flush = () => new Promise(r => setTimeout(r, 0));
 
-async function enterTeacher(pass = 'Hcwmc') {
+async function enterTeacher(pass = '230714') {
   const p = ctx.api.App.enterTeacher();
   doc().querySelector('.modal-input').value = pass;
   doc().querySelector('.modal-ok').click();
@@ -163,6 +163,51 @@ describe('T13.2 · TeacherUI 標詞編輯', () => {
     expect(doc().getElementById('toast').textContent).toContain('貼上');
   });
 
+  it('T13.2h 唔使開始標詞就直接儲存（老師即場貼完文章就儲存）', async () => {
+    await enterTeacher();
+    app().querySelector('#btn-new-article').click();
+
+    doc().getElementById('edit-title').value = '即場貼的文章';
+    doc().getElementById('edit-text').value = '我今日好開心。';
+
+    // 冇撳過「開始標詞」→ 標詞區應該未出現
+    expect(doc().getElementById('teacher-editor')).toBeFalsy();
+
+    doc().getElementById('btn-save-article').click();
+
+    const list = articles();
+    expect(list.length).toBe(5);
+    const created = list.find(a => a.title === '即場貼的文章');
+    expect(created).toBeTruthy();
+    expect(created.text).toBe('我今日好開心。');
+    expect(created.words).toEqual([]);        // 未標詞
+  });
+
+  it('T13.2i 內容係空嘅 → 唔會儲存（唔會產生空文章）', async () => {
+    await enterTeacher();
+    app().querySelector('#btn-new-article').click();
+    doc().getElementById('edit-title').value = '空文章';
+    doc().getElementById('btn-save-article').click();
+
+    expect(articles().length).toBe(4);          // 冇加多
+    expect(doc().getElementById('toast').textContent).toContain('空');
+  });
+
+  it('T13.2j 字數計數器跟住內容更新（emoji 當 1 個字）', async () => {
+    await enterTeacher();
+    app().querySelector('#btn-new-article').click();
+    const ta = doc().getElementById('edit-text');
+    expect(doc().getElementById('text-count').textContent).toBe('0 字');
+
+    ta.value = '我今日好開心。';              // 7 個 code point
+    ta.dispatchEvent(new ctx.win.Event('input'));
+    expect(doc().getElementById('text-count').textContent).toBe('7 字');
+
+    ta.value = '😀';                          // emoji = 1 個 code point
+    ta.dispatchEvent(new ctx.win.Event('input'));
+    expect(doc().getElementById('text-count').textContent).toBe('1 字');
+  });
+
   it('T13.2e 未儲存就撳返回 → 二次確認；撳「繼續編輯」就留返喺編輯頁', async () => {
     await enterTeacher();
     openEditor(0);
@@ -208,8 +253,25 @@ describe('T13.3 · TeacherUI 設定', () => {
     expect(doc().documentElement.style.getPropertyValue('--font-scale')).toBe('1.4');
   });
 
-  it('T13.3c 詞優先 checkbox → 改設定 + 存檔', async () => {
+  it('T13.3e 字級預設掣（細／標準／大／特大）→ 一撳就跳到', async () => {
     await enterTeacher();
+    app().querySelector('#tab-settings').click();
+
+    const btns = doc().getElementById('font-presets').querySelectorAll('button');
+    expect(btns.length).toBe(4);
+
+    btns[2].click();                       // 「大」= 1.3
+    expect(ctx.api.Store.settings.fontScale).toBe(1.3);
+    expect(doc().documentElement.style.getPropertyValue('--font-scale')).toBe('1.3');
+    expect(doc().getElementById('set-font').value).toBe('1.3');
+    expect(doc().getElementById('set-font-val').textContent).toBe('130%');
+
+    btns[1].click();                       // 「標準」= 1
+    expect(ctx.api.Store.settings.fontScale).toBe(1);
+    expect(doc().getElementById('set-font-val').textContent).toBe('100%');
+  });
+
+  it('T13.3c 詞優先 checkbox → 改設定 + 存檔', async () => {    await enterTeacher();
     app().querySelector('#tab-settings').click();
 
     const cb = doc().getElementById('set-word-priority');
@@ -236,7 +298,7 @@ describe('T13.3 · TeacherUI 設定', () => {
     await flush();
 
     expect(ctx.api.Auth.check('aaaaa111')).toBe(false);
-    expect(ctx.api.Auth.check('Hcwmc')).toBe(true);   // 舊密碼仲有效
+    expect(ctx.api.Auth.check('230714')).toBe(true);   // 舊密碼仲有效
 
     // 兩次一樣
     doc().getElementById('btn-change-pass').click();
@@ -249,7 +311,7 @@ describe('T13.3 · TeacherUI 設定', () => {
     await flush();
 
     expect(ctx.api.Auth.check('cccc3333')).toBe(true);
-    expect(ctx.api.Auth.check('Hcwmc')).toBe(false);
+    expect(ctx.api.Auth.check('230714')).toBe(false);
   });
 });
 

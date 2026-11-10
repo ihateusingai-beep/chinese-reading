@@ -135,6 +135,19 @@ const _SCHEMA_VERSION = 1;
 // 粵語預設語速（中度學生要比正常慢）—— 單一真相來源
 const DEFAULT_SPEECH_RATE = 0.75;
 
+// 字級控制（單一真相來源）
+// ⚠️ 細步 5%：中度學生對字級好敏感，10% 一跳大細差好多
+const FONT_SCALE_MIN = 0.7;
+const FONT_SCALE_MAX = 2;
+const FONT_SCALE_STEP = 0.05;
+// 老師常用嘅預設字級（一撳就跳到，唔使慢慢拖 slider）
+const FONT_PRESETS = [
+  { label: '細', value: 0.85 },
+  { label: '標準', value: 1 },
+  { label: '大', value: 1.3 },
+  { label: '特大', value: 1.7 },
+];
+
 // ==================== STORE ====================
 // localStorage 層：全部 key 用 cr* 前綴，唔會撞 reading-para 嘅 yue*
 const Store = {
@@ -420,8 +433,8 @@ const Sha256 = {
 //    唔係防 Hacking（localStorage 本来就係明文可讀，前端 hash 只係唔好咁容易撞見）。
 //    真正嘅安全要靠後端，呢個專案係零 backend。
 const Auth = {
-  // 同 sibling `reading-para` 一致嘅學校預設密碼（老師唔使記兩套）
-  DEFAULT_PASS: 'Hcwmc',
+  // 學校老師密碼（2026-11-10 老師指定）。⚠️ 唔同 sibling `reading-para` 嘅 Hcwmc
+  DEFAULT_PASS: '230714',
   MIN_PASS_LEN: 5,
   _teacher: false,          // 老師模式開關（只喺呢個分頁有效）
 
@@ -1838,6 +1851,16 @@ const TeacherUI = {
     }
   },
 
+  /** 套用字級（slider / 預設掣 共用同一個真相來源） */
+  _applyFontScale(value, fsInput, fsVal) {
+    const v = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Number(value) || 1));
+    Store.settings.fontScale = v;
+    Store.saveSettings();
+    App.applyFontScale();
+    if (fsInput) fsInput.value = String(v);
+    if (fsVal) fsVal.textContent = Math.round(v * 100) + '%';
+  },
+
   // ---------------- 設定 ----------------
   _renderSettings(body) {
     const card = document.createElement('div');
@@ -1878,24 +1901,46 @@ const TeacherUI = {
     const fsInput = document.createElement('input');
     fsInput.type = 'range';
     fsInput.id = 'set-font';
-    fsInput.min = '0.8';
-    fsInput.max = '1.6';
-    fsInput.step = '0.1';
+    fsInput.min = String(FONT_SCALE_MIN);
+    fsInput.max = String(FONT_SCALE_MAX);
+    fsInput.step = String(FONT_SCALE_STEP);
     fsInput.value = String(Store.settings.fontScale);
     const fsVal = document.createElement('span');
     fsVal.className = 'v';
     fsVal.id = 'set-font-val';
     fsVal.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
     fsInput.addEventListener('input', () => {
-      Store.settings.fontScale = Number(fsInput.value);
-      fsVal.textContent = Math.round(Number(fsInput.value) * 100) + '%';
-      Store.saveSettings();
-      App.applyFontScale();
+      TeacherUI._applyFontScale(Number(fsInput.value), fsInput, fsVal);
     });
     fs.appendChild(fsLab);
     fs.appendChild(fsInput);
     fs.appendChild(fsVal);
     card.appendChild(fs);
+
+    // 預設字級（一撳就跳到，唔使慢慢拖）
+    const presets = document.createElement('div');
+    presets.className = 'setting-row';
+    const pLab = document.createElement('label');
+    pLab.textContent = '快速字級';
+    const pWrap = document.createElement('div');
+    pWrap.className = 'btn-row';
+    pWrap.id = 'font-presets';
+    for (const preset of FONT_PRESETS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn-ghost';
+      b.dataset.scale = String(preset.value);
+      b.textContent = preset.label;
+      b.title = `${preset.label}（${Math.round(preset.value * 100)}%）`;
+      b.addEventListener('click', () => {
+        TeacherUI._applyFontScale(preset.value, fsInput, fsVal);
+        Toast.show(`字級：${preset.label}（${Math.round(preset.value * 100)}%）`);
+      });
+      pWrap.appendChild(b);
+    }
+    presets.appendChild(pLab);
+    presets.appendChild(pWrap);
+    card.appendChild(presets);
 
     const wp = document.createElement('div');
     wp.className = 'setting-row';
@@ -2007,8 +2052,46 @@ const TeacherUI = {
     const textarea = document.createElement('textarea');
     textarea.id = 'edit-text';
     textarea.value = ed.text || '';
+    textarea.placeholder = '將文章貼落面（可以長按貼上）';
     form.appendChild(textLabel);
     form.appendChild(textarea);
+
+    // 字數計數 + 貼上掣（老師即場輸入文章嘅主流程）
+    const textTools = document.createElement('div');
+    textTools.className = 'btn-row';
+    const pasteBtn = document.createElement('button');
+    pasteBtn.type = 'button';
+    pasteBtn.id = 'btn-paste';
+    pasteBtn.className = 'btn-ghost';
+    pasteBtn.textContent = '📋 貼上';
+    pasteBtn.title = '由剪貼簿貼上文章';
+    const count = document.createElement('span');
+    count.className = 'v';
+    count.id = 'text-count';
+    const updateCount = () => {
+      const n = Array.from(textarea.value || '').length;   // code point 計數（emoji 當 1 個字）
+      count.textContent = `${n} 字`;
+    };
+    textarea.addEventListener('input', updateCount);
+    updateCount();
+    pasteBtn.addEventListener('click', async () => {
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          Toast.show('呢部裝置唔支援貼上，請長按輸入框貼上');
+          return;
+        }
+        const text = await navigator.clipboard.readText();
+        if (!text || !text.trim()) { Toast.show('剪貼簿係空嘅'); return; }
+        textarea.value = text;
+        updateCount();
+        Toast.show(`已貼上 ${Array.from(text).length} 個字`);
+      } catch (e) {
+        Toast.show('讀唔到剪貼簿，請長按輸入框貼上');
+      }
+    });
+    textTools.appendChild(pasteBtn);
+    textTools.appendChild(count);
+    form.appendChild(textTools);
 
     const startBtn = document.createElement('button');
     startBtn.type = 'button';
@@ -2030,6 +2113,27 @@ const TeacherUI = {
     const markHost = document.createElement('div');
     markHost.id = 'mark-host';
     wrap.appendChild(markHost);
+
+    // 儲存掣**一直喺度**（唔使先開始標詞）—— 老師可以即場貼完文章就儲存
+    const actionCard = document.createElement('div');
+    actionCard.className = 'card';
+    const row = document.createElement('div');
+    row.className = 'btn-row';
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.id = 'btn-save-article';
+    saveBtn.textContent = '💾 儲存文章';
+    saveBtn.addEventListener('click', () => TeacherUI._save());
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn-ghost';
+    cancelBtn.id = 'btn-cancel-edit';
+    cancelBtn.textContent = '取消';
+    cancelBtn.addEventListener('click', () => TeacherUI._leaveEditor());
+    row.appendChild(saveBtn);
+    row.appendChild(cancelBtn);
+    actionCard.appendChild(row);
+    wrap.appendChild(actionCard);
 
     container.appendChild(wrap);
     if (ed.text && ed.text.trim()) TeacherUI._renderMarking(markHost);
@@ -2053,23 +2157,6 @@ const TeacherUI = {
     editor.id = 'teacher-editor';
     card.appendChild(editor);
 
-    const row = document.createElement('div');
-    row.className = 'btn-row';
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.id = 'btn-save-article';
-    saveBtn.textContent = '💾 儲存文章';
-    saveBtn.addEventListener('click', () => TeacherUI._save());
-    const cancelBtn = document.createElement('button');
-    cancelBtn.type = 'button';
-    cancelBtn.className = 'btn-ghost';
-    cancelBtn.id = 'btn-cancel-edit';
-    cancelBtn.textContent = '取消';
-    cancelBtn.addEventListener('click', () => TeacherUI._leaveEditor());
-    row.appendChild(saveBtn);
-    row.appendChild(cancelBtn);
-    card.appendChild(row);
-
     host.appendChild(card);
     Teacher.begin(editor, ed.text, ed.words || []);
   },
@@ -2082,7 +2169,13 @@ const TeacherUI = {
     const textEl = document.getElementById('edit-text');
     if (titleEl) ed.title = titleEl.value.trim() || '未命名';
     if (typeEl) ed.type = typeEl.value;
-    if (textEl && textEl.value.trim()) ed.text = textEl.value;
+    if (textEl) ed.text = textEl.value;
+
+    // ⚠️ 冇內容唔應該儲存（會產生一篇空文章，學生撳落去乜都冇）
+    if (!ed.text || !ed.text.trim()) {
+      Toast.show('文章內容係空嘅，請先貼上文章');
+      return;
+    }
 
     const words = Teacher.getWords();
     let article = ed.id ? Store.getArticle(ed.id) : null;
@@ -2096,7 +2189,8 @@ const TeacherUI = {
     article.published = ed.published !== false;
     Teacher.saveArticle(article);
 
-    Toast.show('已儲存');
+    // 話俾老師知有冇標詞（未標詞 = 學生會逐個字讀，唔會讀成詞）
+    Toast.show(words.length ? `已儲存（${words.length} 個詞）` : '已儲存（未標詞，學生會逐個字讀）');
     TeacherUI._editing = null;
     TeacherUI._tab = 'articles';
     App.go('teacher');
@@ -2256,9 +2350,16 @@ const App = {
     btnPlus.className = 'btn-ghost';
     btnPlus.textContent = 'A+';
 
+    // 顯示目前字級（老師即場調嘅時候要見到大細）
+    const fontLabel = document.createElement('span');
+    fontLabel.className = 'v';
+    fontLabel.id = 'font-scale-label';
+    fontLabel.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
+
     toolbar.appendChild(btnAll);
     toolbar.appendChild(btnStop);
     toolbar.appendChild(btnMinus);
+    toolbar.appendChild(fontLabel);
     toolbar.appendChild(btnPlus);
     card.appendChild(toolbar);
 
@@ -2281,18 +2382,21 @@ const App = {
       });
     });
     btnStop.addEventListener('click', () => { Sequence.stop(); resetBtn(); });
-    btnMinus.addEventListener('click', () => this.changeFontScale(-0.1));
-    btnPlus.addEventListener('click', () => this.changeFontScale(0.1));
+    btnMinus.addEventListener('click', () => this.changeFontScale(-FONT_SCALE_STEP));
+    btnPlus.addEventListener('click', () => this.changeFontScale(FONT_SCALE_STEP));
 
     return wrap;
   },
 
   changeFontScale(delta) {
     const cur = Number(Store.settings.fontScale) || 1;
-    const next = Math.min(1.6, Math.max(0.8, Math.round((cur + delta) * 100) / 100));
+    // ⚠️ 細步（5%）：中度學生對字級好敏感，10% 一跳太多（大細差好多）
+    const next = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Math.round((cur + delta) * 100) / 100));
     Store.settings.fontScale = next;
     Store.saveSettings();
     this.applyFontScale();
+    const label = document.getElementById('font-scale-label');
+    if (label) label.textContent = Math.round(next * 100) + '%';
   },
 };
 

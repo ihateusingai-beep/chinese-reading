@@ -127,23 +127,31 @@ describe('T12 · App 路由（閱讀頁）', () => {
     expect(ctx.api.App.view).toBe('hub');
   });
 
-  it('T12.15 字級 + / − → 儲存 + 套用落 CSS 變數', () => {
+  it('T12.15 字級 + / − → 儲存 + 套用落 CSS 變數（5% 細步）', () => {
     ctx.api.App.openArticle(firstArticle().id);
     app().querySelector('#btn-font-plus').click();
 
-    expect(ctx.api.Store.settings.fontScale).toBe(1.1);
-    expect(doc().documentElement.style.getPropertyValue('--font-scale')).toBe('1.1');
+    expect(ctx.api.Store.settings.fontScale).toBe(1.05);
+    expect(doc().documentElement.style.getPropertyValue('--font-scale')).toBe('1.05');
 
     app().querySelector('#btn-font-minus').click();
     expect(ctx.api.Store.settings.fontScale).toBe(1);
   });
 
-  it('T12.16 字級有上下限（唔會變到 0 或者爆錶）', () => {
-    for (let i = 0; i < 20; i++) ctx.api.App.changeFontScale(0.1);
-    expect(ctx.api.Store.settings.fontScale).toBeLessThanOrEqual(1.6);
+  it('T12.15b 閱讀頁顯示目前字級百分比', () => {
+    ctx.api.App.openArticle(firstArticle().id);
+    expect(app().querySelector('#font-scale-label').textContent).toBe('100%');
 
-    for (let i = 0; i < 40; i++) ctx.api.App.changeFontScale(-0.1);
-    expect(ctx.api.Store.settings.fontScale).toBeGreaterThanOrEqual(0.8);
+    app().querySelector('#btn-font-plus').click();
+    expect(app().querySelector('#font-scale-label').textContent).toBe('105%');
+  });
+
+  it('T12.16 字級有上下限（唔會變到 0 或者爆錶）', () => {
+    for (let i = 0; i < 40; i++) ctx.api.App.changeFontScale(0.1);
+    expect(ctx.api.Store.settings.fontScale).toBeLessThanOrEqual(2);
+
+    for (let i = 0; i < 60; i++) ctx.api.App.changeFontScale(-0.1);
+    expect(ctx.api.Store.settings.fontScale).toBeGreaterThanOrEqual(0.7);
   });
 
   it('T12.17 換頁時會停低串行朗讀（唔會喺背後繼續讀）', () => {
@@ -179,7 +187,7 @@ describe('T12 · 老師模式 gate（由學生頁入）', () => {
 
   it('T12.20 密碼啱 → 入老師頁', async () => {
     const p = ctx.api.App.enterTeacher();
-    doc().querySelector('.modal-input').value = 'Hcwmc';
+    doc().querySelector('.modal-input').value = '230714';
     doc().querySelector('.modal-ok').click();
     await p;
 

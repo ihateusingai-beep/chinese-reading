@@ -151,14 +151,14 @@ Article = {
 | `Teacher` | ✅ | 標詞配對、**延長一字模式**、文章 CRUD、匯入匯出、失效詞標示 |
 | `Toast` / `Modal` | ✅ | `Toast.show()`（`role=status`）、`Modal.askConfirm()`、`Modal.askText()`（in-app 文字／密碼輸入） |
 | `Sha256` | ✅ | 純 JS SHA-256（**唔用** `crypto.subtle` —— 見 T18） |
-| `Auth` | ✅ | 老師密碼 gate（SHA-256 + 每次安裝隨機 salt）、預設密碼 `Hcwmc`（同 `reading-para` 一致） |
+| `Auth` | ✅ | 老師密碼 gate（SHA-256 + 每次安裝隨機 salt）、預設密碼 `230714`（老師指定） |
 | `Hub` | ✅ | 學生端首頁（**只顯示 published 文章**）、大卡片 |
 | `TeacherUI` | ✅ | 文章庫（發佈/隱藏/刪除）+ 標詞編輯器 + 設定（語速/字級/詞優先）+ 改密碼 + 匯入匯出 |
 | `App` | ✅ | 冪等 `init()`、四個 view 路由（hub / read / teacher / teacher-edit）、字級縮放 |
 
 ### 測試基建現況
 
-- `npm test` → vitest run（**166 tests / 14 files**）
+- `npm test` → vitest run（**171 tests / 14 files**）
 - `npm run test:browser` → Playwright Tier 2（**13 tests**，已裝 Chromium）
 - `npm run guard:full` → Tier 1 + Tier 2
 - 依賴：vitest + jsdom + axe-core（**dev-only**，app 本身零依賴）
@@ -169,7 +169,7 @@ Article = {
 - **自我驗證工具**（唔入 vitest，刻意唔依賴 vitest）：
   - `node tools/verify-guard.mjs` → 12 項，證明守門規則每個分支都有 mutant 守住
   - `bash tools/verify-teacher-guard.sh` → 3 輪真實改壞 Teacher 實作，確認 T5 測試會紅（做完自動還原）
-  - `bash tools/verify-m0m1-guard.sh` → 5 輪真實改壞 M0/M1 新功能，確認 T11/T12/T3 測試會紅（做完自動還原）
+  - `bash tools/verify-m0m1-guard.sh` → 9 輪真實改壞 M0/M1 新功能，確認 T11/T12/T13/T3 測試會紅（做完自動還原）
 
 ---
 

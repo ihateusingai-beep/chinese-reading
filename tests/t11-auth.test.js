@@ -24,7 +24,7 @@ const sha = (s) => createHash('sha256').update(s, 'utf8').digest('hex');
 describe('T11.1 · Sha256（純 JS 實作）', () => {
   it('T11.1a 對齊 Node crypto 嘅 SHA-256（多個輸入 + 跨 block 邊界）', () => {
     const cases = [
-      '', 'abc', 'Hcwmc', 'a', 'a'.repeat(55), 'a'.repeat(56), 'a'.repeat(63),
+      '', 'abc', '230714', 'a', 'a'.repeat(55), 'a'.repeat(56), 'a'.repeat(63),
       'a'.repeat(64), 'a'.repeat(65), 'a'.repeat(1000),
       '中文密碼', '😀 emoji', 'The quick brown fox jumps over the lazy dog',
     ];
@@ -69,7 +69,7 @@ describe('T11.2 · Auth（老師密碼 gate）', () => {
   });
 
   it('T11.2b 預設密碼（學校預設，同 reading-para 一致）入到', () => {
-    expect(ctx.api.Auth.check('Hcwmc')).toBe(true);
+    expect(ctx.api.Auth.check('230714')).toBe(true);
   });
 
   it('T11.2c 錯密碼 / 空密碼 / 非字串 → 一律入唔到', () => {
@@ -81,8 +81,8 @@ describe('T11.2 · Auth（老師密碼 gate）', () => {
   });
 
   it('T11.2d salt 唔同 → 同一個密碼嘅 hash 都唔同（真·salted）', () => {
-    const a = ctx.api.Auth.hash('Hcwmc', 'salt-aaaa');
-    const b = ctx.api.Auth.hash('Hcwmc', 'salt-bbbb');
+    const a = ctx.api.Auth.hash('230714', 'salt-aaaa');
+    const b = ctx.api.Auth.hash('230714', 'salt-bbbb');
     expect(a).not.toBe(b);
     expect(a).toHaveLength(64);
   });
@@ -91,20 +91,20 @@ describe('T11.2 · Auth（老師密碼 gate）', () => {
     const res = ctx.api.Auth.changePassword('newpass123');
     expect(res.ok).toBe(true);
     expect(ctx.api.Auth.check('newpass123')).toBe(true);
-    expect(ctx.api.Auth.check('Hcwmc')).toBe(false);
+    expect(ctx.api.Auth.check('230714')).toBe(false);
   });
 
   it('T11.2f 改密碼太短 → 拒絕 + 有錯誤訊息，舊密碼仲有效', () => {
     const res = ctx.api.Auth.changePassword('ab');
     expect(res.ok).toBe(false);
     expect(res.error).toBeTruthy();
-    expect(ctx.api.Auth.check('Hcwmc')).toBe(true);
+    expect(ctx.api.Auth.check('230714')).toBe(true);
   });
 
   it('T11.2g crTeacherPassHash 係壞 JSON → 唔 crash，重新產生', () => {
     ctx.win.localStorage.setItem('crTeacherPassHash', '{ not json');
     expect(() => ctx.api.Auth.ensureSeeded()).not.toThrow();
-    expect(ctx.api.Auth.check('Hcwmc')).toBe(true);
+    expect(ctx.api.Auth.check('230714')).toBe(true);
   });
 
   it('T11.2h askPassword → 密碼啱 → 老師模式開啟', async () => {
@@ -114,7 +114,7 @@ describe('T11.2 · Auth（老師密碼 gate）', () => {
     const input = ctx.win.document.querySelector('.modal-input');
     expect(input, '應該出現密碼輸入框').toBeTruthy();
     expect(input.type).toBe('password');
-    input.value = 'Hcwmc';
+    input.value = '230714';
     ctx.win.document.querySelector('.modal-ok').click();
 
     const res = await p;
