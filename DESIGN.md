@@ -603,10 +603,12 @@ chinese-reading/
 | **M3 教學增強** | 認字測驗（簡單版）、重點詞高亮模式 | 教學深度 | ⬜ |
 | **v2 展望** | 錄音跟讀、`audio` 欄位（mp3 / 老師錄音覆寫）、圖片提示、與 `reading-para` 打通 | — | ⬜ |
 
-⚠️ **M1 仲差兩樣嘢**：
-1. **GitHub Pages 部署**（`ihateusingai-beep/chinese-reading` repo 未建立）
-2. **學校實機測試**（iPad + Windows 平板）—— 驗證 **R1**（裝置有冇 zh-HK voice）。
-   呢個係 M1 ship 嘅硬門檻：冇驗證過就唔知發音層會唔會喺學校機房死掉。
+⚠️ **M1 仲差一樣嘢**：
+**學校實機測試**（iPad + Windows 平板）—— 驗證 **R1**（裝置有冇 zh-HK voice）。
+呢個係 M1 ship 嘅硬門檻：冇驗證過就唔知發音層會唔會喺學校機房死掉。
+
+✅ 已部署：https://ihateusingai-beep.github.io/chinese-reading/（GitHub Pages，公開 repo）
+⚠️ 線上版本**未經學校實機驗證**（2026-11-10 部署時 R1 未確認）。
 
 ---
 

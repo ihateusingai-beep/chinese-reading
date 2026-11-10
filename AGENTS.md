@@ -13,11 +13,13 @@
 | 項目 | 值 |
 |---|---|
 | Path | `/Users/kencheng/workspace/vs code/education/chinese/chinese-reading/` |
-| Status | **M0/M1 完成**（166 Tier 1 + 13 Tier 2 全綠）；App 四個 view 已通；**未 git init**、未部署 |
+| Status | **M0/M1 完成 + 已部署**（166 Tier 1 + 13 Tier 2 全綠）；App 四個 view 已通 |
 | Design doc | `DESIGN.md`（v0.1） |
+| Live URL | **https://ihateusingai-beep.github.io/chinese-reading/**（GitHub Pages，公開） |
+| Repo | https://github.com/ihateusingai-beep/chinese-reading（public，`main`） |
 | Deploy | GitHub Pages，單一 `index.html`，零 backend |
 | LLM / API | **完全唔用**。發音用瀏覽器內建 Web Speech API (zh-HK) |
-| Git | ⚠️ **未 `git init`**（`.gitignore` 已備好，push 前要 init） |
+| Git | ✅ 已 `git init`（`main`），remote = `origin` |
 
 ### 同 sibling projects 嘅分工（唔好搞混）
 
@@ -133,8 +135,9 @@ Article = {
 6. ✅ **T5 Teacher**（步驟 6）：標詞配對 + **延長一字模式** + 文章 CRUD + 匯入匯出 + 失效標示，17 個測試
 7. ✅ **M0/M1 scaffold**：Hub 首頁 / 閱讀頁 / 老師端 UI / 密碼 gate / 發佈隱藏 / 預設文章 / 進度記錄
    （新增 `Sha256` `Auth` `Hub` `TeacherUI` 四個模組 + T11/T12/T13 三個測試檔，55 個測試）
-8. ⬜ **`git init` + GitHub Pages 部署**（`ihateusingai-beep/chinese-reading`，repo 未建立）
-9. ⬜ **學校實機測試**（iPad + Windows 平板）— 驗證 R1
+8. ✅ **`git init` + GitHub Pages 部署** → https://ihateusingai-beep.github.io/chinese-reading/
+   （公開 repo；線上檔案同本地**逐 byte 一致** + 結構斷言全過，已驗證）
+9. ⬜ **學校實機測試**（iPad + Windows 平板）— 驗證 R1 ⬅️ **M1 ship 硬門檻，仲未做**
 
 ### 已實作模組（全部喺 `index.html` 單檔內）
 
