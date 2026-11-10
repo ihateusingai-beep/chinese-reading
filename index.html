@@ -105,6 +105,9 @@ button:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 .setting-row .v{min-width:4em;font-weight:700;color:var(--purple)}
 textarea{width:100%;min-height:160px;font-size:1.1em;font-family:inherit;padding:12px;border:2px solid var(--line);border-radius:12px}
 input[type=text],input[type=password]{width:100%;min-height:70px;font-size:1.2em;padding:10px 12px;border:2px solid var(--line);border-radius:12px;font-family:inherit}
+/* 下拉框：老師用大手指揀類型，太細撳唔中 → 同其他輸入框一樣 ≥70px */
+select{width:100%;max-width:340px;min-height:70px;font-size:1.2em;padding:8px 12px;border:2px solid var(--line);border-radius:12px;font-family:inherit;background:var(--card);color:var(--ink)}
+.field-label{display:block;font-weight:700;margin-top:12px}
 .modal-input{width:100%;min-height:70px;font-size:1.2em;padding:10px 12px;border:2px solid var(--line);border-radius:12px;margin-top:10px;font-family:inherit}
 
 /* ---- Toast / Modal（SEN 原則：唔可以用 alert() / confirm()）---- */
@@ -2014,8 +2017,7 @@ const TeacherUI = {
     const titleLabel = document.createElement('label');
     titleLabel.textContent = '標題';
     titleLabel.setAttribute('for', 'edit-title');
-    titleLabel.style.fontWeight = '700';
-    titleLabel.style.display = 'block';
+    titleLabel.className = 'field-label';
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.id = 'edit-title';
@@ -2026,13 +2028,9 @@ const TeacherUI = {
     const typeLabel = document.createElement('label');
     typeLabel.textContent = '類型';
     typeLabel.setAttribute('for', 'edit-type');
-    typeLabel.style.fontWeight = '700';
-    typeLabel.style.display = 'block';
+    typeLabel.className = 'field-label';
     const typeSel = document.createElement('select');
     typeSel.id = 'edit-type';
-    typeSel.style.minHeight = '56px';
-    typeSel.style.fontSize = '1.2em';
-    typeSel.style.padding = '8px 12px';
     const types = [['life', '生活'], ['prose', '散文'], ['poem', '詩歌']];
     for (const pair of types) {
       const o = document.createElement('option');
@@ -2047,8 +2045,7 @@ const TeacherUI = {
     const textLabel = document.createElement('label');
     textLabel.textContent = '文章內容';
     textLabel.setAttribute('for', 'edit-text');
-    textLabel.style.fontWeight = '700';
-    textLabel.style.display = 'block';
+    textLabel.className = 'field-label';
     const textarea = document.createElement('textarea');
     textarea.id = 'edit-text';
     textarea.value = ed.text || '';

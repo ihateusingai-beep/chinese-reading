@@ -170,6 +170,7 @@ Article = {
   - `node tools/verify-guard.mjs` → 12 項，證明守門規則每個分支都有 mutant 守住
   - `bash tools/verify-teacher-guard.sh` → 3 輪真實改壞 Teacher 實作，確認 T5 測試會紅（做完自動還原）
   - `bash tools/verify-m0m1-guard.sh` → 9 輪真實改壞 M0/M1 新功能，確認 T11/T12/T13/T3 測試會紅（做完自動還原）
+  - `node tools/screenshot.mjs` → 影 6 張關鍵畫面（學生首頁／閱讀頁／老師文章庫／設定／新文章／標詞）到 `docs/screenshots/`
 
 ---
 

@@ -164,6 +164,23 @@ test.describe('Tier 2 · 真實瀏覽器版面驗證', () => {
     }
   });
 
+  test('D1d 表單控制項觸控區：輸入框／下拉／textarea 高度 ≥ 70px', async ({ page }) => {
+    await openTeacher(page);
+    await page.locator('#btn-new-article').click();
+    await page.waitForSelector('#edit-text');
+
+    const sizes = await page.$$eval('#teacher-edit input, #teacher-edit select, #teacher-edit textarea', els =>
+      els.map(e => {
+        const r = e.getBoundingClientRect();
+        return { id: e.id, tag: e.tagName, h: Math.round(r.height) };
+      })
+    );
+    expect(sizes.length).toBeGreaterThan(0);
+    for (const s of sizes) {
+      expect(s.h, `${s.tag}#${s.id} 高度要 ≥70px`).toBeGreaterThanOrEqual(70);
+    }
+  });
+
   test('D2 axe-core：閱讀頁 serious / critical 違規 = 0（含真實對比度）', async ({ page }) => {
     await openReader(page);
     const violations = await axeViolations(page);
