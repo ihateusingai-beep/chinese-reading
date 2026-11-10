@@ -9,7 +9,7 @@
 //    否則 T10 meta-test 會紅。
 
 /** 已實作嘅結構斷言 ID（每個都必須有 mutant 對應） */
-export const ASSERTION_IDS = ['S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S17', 'S18', 'S19', 'S20', 'S21'];
+export const ASSERTION_IDS = ['S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22'];
 
 /**
  * 剝走註解（保留字串內容）。
@@ -218,6 +218,30 @@ export function structuralFails(src) {
   }
   if (badKeys.length) {
     fail('S21', `localStorage key 必須用 cr* 前綴（唔會撞 reading-para 嘅 yue*）：${badKeys.join(', ')}`);
+  }
+
+  // ---- S22：多字詞 token 要用內容寬度 + 詞內固定字格 ----
+  // ⚠️ 真 bug（2026-11-10 課文《到餐廳去》截圖發現）：
+  //    `.tok` 固定 width:1.15em 套落**多字詞** token → 3–4 字詞嘅內容（3–4 × 1em）
+  //    遠超 1.15em 容器 → 文字溢出、互相覆蓋 → 學生撳唔到被蓋住嘅字
+  //    （Playwright 判定「被遮擋」→ actionability 永遠唔成立 → timeout）。
+  // → 詞 token 用 width:auto（內容寬度）；字格喺詞內逐字維護（每個 .g 都係 1.15em），
+  //    咁每個字仍然對齊同一個網格，冇重疊。
+  //
+  // ⚠️ 用「剝走註解」嘅 CSS 嚟 match：否則 CSS 註解入面只要寫低呢條規則，
+  //    下面嘅 regex 就會匹配到註解 → 守門變成假守門。
+  const cssNoComment = stripComments(css);
+  const wordRule = (cssNoComment.match(/\.tok\.word\{([^}]*)\}/) || [])[1] || '';
+  if (!wordRule) {
+    fail('S22', '搵唔到詞 token 嘅 CSS 規則');
+  } else if (!/width\s*:\s*auto/.test(wordRule)) {
+    fail('S22', '詞 token 必須用 width:auto（多字詞內容闊過一個字格，固定闊度會溢出重疊）');
+  }
+  const wordGRule = (cssNoComment.match(/\.tok\.word \.g\{([^}]*)\}/) || [])[1] || '';
+  if (!wordGRule) {
+    fail('S22', '搵唔到詞 token 內嘅字格規則');
+  } else if (!/width\s*:\s*1\.15em/.test(wordGRule)) {
+    fail('S22', '詞 token 內每個字必須維持 1.15em 字格，令詞內外網格一致、唔會重疊');
   }
 
   return fails;

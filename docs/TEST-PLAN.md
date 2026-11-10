@@ -329,6 +329,7 @@ chinese-reading/
 | T3.12 | 撳字會停低正在進行嘅串行朗讀（兩個聲音唔會黐埋） | §5.4 |
 | T3.13 | `highlightToken()` 高亮指定 token（讀全篇時個字跟住跳） | §5.4 |
 | T3.14 | 重新渲染會清走舊嘅高亮狀態 | §5.2 |
+| T3.15 | **多字詞 token 唔會疊行／溢出**（Tier 2 真瀏覽器：詞內每個 `.g` 同一行、墨喺自己個框入面、冇蓋住隔籬字） | A6 |
 
 ### 5.4 T4 Sequence
 
@@ -386,8 +387,6 @@ chinese-reading/
 | S1 | 冇 `alert(` / `confirm(` / `prompt(` | SEN 原則 |
 | S2 | 放大用 `transform: scale(...)`，**唔係** `font-size` 改字級 | §5.2 |
 | S3 | `.tok` 有固定寬度（`width:` 唔係 `auto`） | §5.2 |
-| S2 | 放大用 `transform: scale(...)`，**唔係** `font-size` 改字級 | §5.2 |
-| S3 | `.tok` 有固定寬度（`width:` 唔係 `auto`） | §5.2 |
 | S4 | `u.onerror` 入面有呼叫 `onend`（同一個語句或下一行） | T2 |
 | S5 | 串行推進靠 `onend`（唔係 `setTimeout` 估長度） | §5.4 |
 | S6 | `speak()` 之後／之前有 `speechSynthesis.cancel()` | T3 |
@@ -403,6 +402,7 @@ chinese-reading/
 | S16 | 冇 top-level 直接讀 `window.speechSynthesis`（C4） | C4 |
 | S17 | Tokenizer 必須用 `Array.from(text \|\| '')` 攞 code-point 陣列，**唔可以用 `split('')`** | §4.1 |
 | S18 | `Sequence._afterSpeech` 必須有 generation guard（`gen !== this._gen`） | §5.5.2 T8 |
+| S22 | 詞 token 用 `width:auto`（內容寬度）+ 詞內每個 `.g` 維持 `1.15em` 字格 | §5.2 T22 |
 
 ---
 
@@ -446,6 +446,8 @@ chinese-reading/
 | M18 | 喺 `Sha256.hash()` 注入 `crypto.subtle.digest(...)` | S20 | T7、T9 |
 | M19 | `KEY_ARTICLES: 'crArticles'` → `'yueArticles'` | S21 | T7、T9、T8.4 |
 | M20 | 注入 inline literal `localStorage.setItem('yueInline', 'x')` | S21 | T7、T9 |
+| M21 | 詞 token `width:auto` → `width:1.15em`（重現 2026-11-10 多字詞疊行 bug） | S22 | T7、T9、Tier 2 A6 |
+| M22 | 詞 token 內 `.g` `width:1.15em` → `width:auto` | S22 | T7、T9 |
 
 > ⚠️ 每個 mutant 嘅 `from` 字串必須**唯一**出現（或者用更長嘅 context）。
 > 出現多過一次 → mutant 會改錯地方 → 測試「變紅」咗但係因為另一個原因 → **假陽性**。
@@ -661,7 +663,7 @@ export default defineConfig({
 
 > ⚠️ 單檔 HTML 入面嘅 **inline CSS 冇任何工具量到覆蓋率**（v8 只量 JS）。
 > CSS 嘅守門靠 T7 結構斷言（例如「放大必須用 transform scale 唔係 font-size」）
-> + Tier 2 真實瀏覽器驗證（A2 重排 / D1 觸控區 / D2 對比度）。
+> + Tier 2 真實瀏覽器驗證（A2 重排 / A6 多字詞版面 / D1 觸控區 / D2 對比度）。
 
 ---
 
@@ -676,17 +678,17 @@ export default defineConfig({
 | T4 Sequence | ✅ 已寫（12 case） | T4.1–T4.12 |
 | T5 Teacher | ✅ 已寫（17 case） | T5.1–T5.14（含 T5.9b／T5.9c 延長一字模式、T5.10／T5.10b 二次確認） |
 | T6 A11y | ✅ 已寫（7 case） | axe-core 已接（Tier 2 跑）；Toast `role=status` + `aria-live` |
-| T7 Structure | ✅ 已寫 | S2/S3/S4/S5/S6/S7/S8/S9/S10/S11/S17/S18/S19（**13 條已實作**） |
+| T7 Structure | ✅ 已寫 | S2/S3/S4/S5/S6/S7/S8/S9/S10/S11/S17/S18/S19/S20/S21/S22（**16 條已實作**） |
 | T8 Storage | ✅ 已寫（4 case） | T8.1–T8.4 |
-| T9 Mutants | ✅ 已寫（**18 mutant**） | M1/M2/M3/M4/M5/M6/M7/M8/M9/M12/M13/M14/M15/M16/M17/M18/M19/M20 |
+| T9 Mutants | ✅ 已寫（**20 mutant**） | M1/M2/M3/M4/M5/M6/M7/M8/M9/M12/M13/M14/M15/M16/M17/M18/M19/M20/M21/M22 |
 | T10 Meta | ✅ 已寫（7 case） | mutant 覆蓋率 + 模組↔測試檔對齊 |
 | T11 Auth | ✅ 已寫（18 case） | Sha256（對齊 Node crypto）+ Auth 密碼 gate + `Modal.askText` |
-| T12 Hub | ✅ 已寫（21 case） | Hub 首頁 + App 路由 + 閱讀頁 + 老師模式 gate |
+| T12 Hub | ✅ 已寫（22 case） | Hub 首頁 + App 路由 + 閱讀頁 + 老師模式 gate + 種子版本機制（T12.4b） |
 | T13 TeacherUI | ✅ 已寫（21 case） | 文章庫（發佈/隱藏/刪除）+ 標詞編輯 + 設定 + 匯入匯出 |
-| Tier 2 browser | ✅ 已寫（13 case，已跑通） | `tests/browser/layout.spec.js` · Playwright Chromium（閱讀頁 / hub / 老師頁 / modal 各自跑 axe） |
+| Tier 2 browser | ✅ 已寫（16 case，已跑通） | `tests/browser/layout.spec.js` · Playwright Chromium（閱讀頁 / hub / 老師頁 / modal 各自跑 axe；A5 課文端到端、A6 多字詞版面、D1d 表單觸控區） |
 | Tier 3 實機 | ⬜ 未做 | **M1 尾必做，驗證 R1** |
 
-**目前總數**：Tier 1 = **171 tests / 14 files**；Tier 2 = 13 tests；mutant = 18 個。
+**目前總數**：Tier 1 = **174 tests / 14 files**；Tier 2 = 16 tests；mutant = 20 個。
 
 **已驗證**：
 - 2026-11-10 四輪破壞（Reader）：關咗詞優先 → T3.4–T3.7 紅；放大改 font-size → T7(S2)+T9(M13) 紅；
@@ -718,6 +720,27 @@ export default defineConfig({
   - D10 空內容唔阻儲存 → **T13.2i 紅**
   - D11 字數計數器唔更新 → **T13.2j 紅**
   - D12 字級預設掣唔會套用 → **T13.3e 紅**
+- 2026-11-10 **守門自我驗證發現「破壞驗證腳本自己會講大話」**（重要）：
+  - `tools/verify-m0m1-guard.sh` 嘅 **D6** 輪（老師清空文章庫 → 唔會生返預設文章）
+    **冇令測試變紅**（22 tests 全綠）。
+  - 根因：內容版本機制改寫之後，D6 嘅破壞錨點（`if (raw !== null) return false;`）
+    **已經唔存在** → python `assert` 失敗 → **改壞根本冇發生** → 測試當然綠。
+    而家 D6 嘅保護係**兩層**（版本早退 + 逐篇 `seedVersion` 過濾），要一齊拆走才捉到。
+  - ⚠️ 更毒嘅位：腳本照樣印「破壞：D6 …」同「22 passed」，睇落完全正常。
+  - → **修正**：三個 `verify-*.sh` 全部改成**自我驗證** ——
+    ① 錨點搵唔到 → 印 ❌ + `exit 1`（唔准靜靜跳過）
+    ② 改壞之後指定嗰層測試**冇變紅** → 印 ❌ + `exit 1`
+    ③ 每輪標明期望層級（L1 兩層都要紅；L2 淨係 Tier 1 紅，因為詞內字格唔固定
+       只係網格一致性問題，唔會造成疊行 → A6 正確唔報）。
+- 2026-11-10 **版面真 bug：多字詞 token 疊行重疊**（課文《到餐廳去》截圖發現，唔係測試寫法問題）：
+  - 根因：`.tok` 固定 `width:1.15em` 套落**多字詞** token → 3–4 個字喺 1.15em 闊嘅框入面「疊行」，
+    文字溢出、互相覆蓋 → 學生撳唔到被蓋住嘅字（Playwright 判定「被遮擋」→ A5 timeout 30 秒）。
+  - 修法：詞 token 用 `width:auto`（內容寬度），字格喺詞內逐字維護（每個 `.g` 都係 `1.15em`）
+    → 每個字仍然對齊同一個網格，放大亦唔會推走隔籬字。
+  - 守門：新斷言 **S22**（兩個分支）＋ **M21/M22**；Tier 2 新增 **A6**（真瀏覽器驗冇疊行、冇蓋住隔籬字）。
+  - 破壞驗證（`tools/verify-layout-guard.sh`，2 輪、自動還原、**自我驗證**）：
+    - L1 重現原 bug → **T7(S22) + Tier 2 A6 兩層都紅**（訊息：「多字詞 token 入面嘅字疊咗行（n=4）」）
+    - L2 詞內字格唔固定 → **T7(S22) 紅**（A6 正確唔報：實際上冇重疊，呢個係結構一致性問題）
 - 2026-11-10 **Tier 2 axe 捉到 4 類真問題**（全部已修）：
   `label-content-name-mismatch`（卡片／按鈕加咗 aria-label，同可見文字打架）→
   改用 `title`；`aria-dialog-name`（modal 冇 accessible name）→ `aria-labelledby="modal-title"`；

@@ -39,6 +39,14 @@ await page.waitForSelector('#reading-area .tok');
 await page.locator('#reading-area .g').nth(13).click();
 await shot('02-reading.png');
 
+// 2b. 課文《到餐廳去》（撳「三」→ 讀「三文治」）
+await page.goto(APP_URL);
+await page.waitForSelector('#hub .article-card');
+await page.locator('#hub .article-card', { hasText: '到餐廳去' }).click();
+await page.waitForSelector('#reading-area .tok');
+await page.locator('#reading-area .g').nth(21).click();
+await shot('02b-reading-lesson.png');
+
 // 3. 老師模式 → 文章庫
 await page.goto(APP_URL);
 await page.waitForSelector('#hub .article-card');

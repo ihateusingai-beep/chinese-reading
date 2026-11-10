@@ -1,9 +1,9 @@
-# 互動中文閱讀（點讀）— 設計構思 v0.1
+# 互動中文閱讀（點讀）— 設計構思 v0.2
 
 > **Project**: `chinese-reading`
 > **Path**: `/Users/kencheng/workspace/vs code/education/chinese/chinese-reading/`
 > **對象學生**: 中度智障 / 輕度智障 SEN
-> **狀態**: 構思階段（未實作）
+> **狀態**: M0/M1 已實作並部署（2026-11-10 上線 GitHub Pages）
 > **Last updated**: 2026-11-10
 > **User**: kencheng | 學校：匡智張玉瓊晨輝學校
 
@@ -272,7 +272,12 @@ App.view = 'hub'          學生首頁：揀文章（大卡片 + 類型 badge + 
 }
 .tok.on { background: #fef08a; box-shadow: 0 0 0 3px #f59e0b; }
 .tok.on .g { transform: scale(1.45); }
-.tok.word { box-shadow: inset 0 -0.12em 0 #7c3aed; }   /* 詞：底部紫線 */
+.tok.word {                    /* 詞：底部紫線 */
+  width: auto;                 /* ⚠️ 多字詞唔可以跟單字用 1.15em（見下） */
+  white-space: nowrap;         /* 詞唔可以喺中間斷行 */
+  box-shadow: inset 0 -0.12em 0 #7c3aed;
+}
+.tok.word .g { width: 1.15em; text-align: center; }  /* 詞內每個字維持同一個字格 */
 .tok.word.on { background: #ddd6fe; }
 ```
 
@@ -280,7 +285,18 @@ App.view = 'hub'          學生首頁：揀文章（大卡片 + 類型 badge + 
 - 改 font-size → 觸發 reflow → 成句字會被推開／跳動 → 中度學生睇唔到自己點咗邊個字
 - `transform: scale()` → **唔參與 layout** → 鄰字唔郁，只有目標字「彈出」
 - 固定 `width:1.15em` 字格保證放大後唔會蓋住鄰字嘅可見筆畫（1.45em ÷ 2 邊溢出 ≈ 0.15em，剛好等於格間隙）
-- 詞（2 字）→ 一個 token 入面 2 個 `.g`，一齊 scale
+
+**⚠️ 多字詞 token 嘅例外（2026-11-10 真 bug，T22）**：
+- **單字**用固定 `width:1.15em` 字格（上面嗰條），但**多字詞**（2–4 字）**唔可以**照抄：
+  詞 token 入面有 N 個 `.g`（每個 ≈ 1em），N × 1em 遠超 1.15em 嘅框 →
+  啲字會喺 1.15em 闊嘅框入面「疊行」，文字溢出、互相覆蓋 →
+  **學生撳唔到被蓋住嘅字**（Playwright 判定「被遮擋」→ actionability 永遠唔成立 → 測試 timeout）。
+- 解法：**詞 token 用 `width:auto`（內容寬度），字格喺詞內逐字維護**（每個 `.g` 都係 `1.15em`）。
+  → 每個字仍然對齊同一個網格（詞內外一致）、冇重疊，放大亦唔會推走隔籬字。
+- 結構守門 **S22**（兩個分支）+ mutant **M21/M22**；Tier 2 **A6** 喺真瀏覽器驗「冇疊行、冇蓋住隔籬字」
+  （jsdom 冇 layout engine → 呢類 bug 只有 Tier 2 捉得到）。
+
+**詞（2–4 字）→ 一個 token 入面 N 個 `.g`，一齊 scale**。
 
 **「變大」之後仲要有乜？** 對中度學生，純放大未必夠 —— 加 **彈跳 + 底色 + 圈線** 三重回饋先夠醒目。
 

@@ -44,14 +44,14 @@ describe('T13.1 · TeacherUI 文章庫', () => {
 
   it('T13.1b 文章庫列出全部文章（包括隱藏嘅 —— 老師要見到全部）', async () => {
     await enterTeacher();
-    expect(app().querySelectorAll('.article-row').length).toBe(4);
+    expect(app().querySelectorAll('.article-row').length).toBe(ctx.api.Store.SEED_ARTICLES.length);
 
     const list = articles();
     list[0].published = false;
     ctx.api.Store.saveArticles(list);
     ctx.api.TeacherUI._renderBody();
 
-    expect(app().querySelectorAll('.article-row').length).toBe(4);
+    expect(app().querySelectorAll('.article-row').length).toBe(ctx.api.Store.SEED_ARTICLES.length);
     expect(app().textContent).toContain('🚫 隱藏');
     expect(app().textContent).toContain('👁 已發佈');
   });
@@ -68,7 +68,7 @@ describe('T13.1 · TeacherUI 文章庫', () => {
 
     expect(ctx.api.Store.getArticle(target.id).published).toBe(false);
     ctx.api.App.go('hub');
-    expect(app().querySelectorAll('.article-card').length).toBe(3);
+    expect(app().querySelectorAll('.article-card').length).toBe(ctx.api.Store.SEED_ARTICLES.length - 1);
   });
 
   it('T13.1d 撳「刪除」→ 二次確認先刪；取消就唔刪', async () => {
@@ -94,7 +94,7 @@ describe('T13.1 · TeacherUI 文章庫', () => {
     doc().querySelector('.modal-ok').click();
     await flush();
     expect(ctx.api.Store.getArticle(target.id)).toBeFalsy();
-    expect(articles().length).toBe(3);
+    expect(articles().length).toBe(ctx.api.Store.SEED_ARTICLES.length - 1);
   });
 });
 
@@ -146,7 +146,7 @@ describe('T13.2 · TeacherUI 標詞編輯', () => {
 
     expect(ctx.api.App.view).toBe('teacher');
     const list = articles();
-    expect(list.length).toBe(5);
+    expect(list.length).toBe(ctx.api.Store.SEED_ARTICLES.length + 1);
     const created = list.find(a => a.title === '新文章測試');
     expect(created).toBeTruthy();
     expect(created.type).toBe('poem');
@@ -176,7 +176,7 @@ describe('T13.2 · TeacherUI 標詞編輯', () => {
     doc().getElementById('btn-save-article').click();
 
     const list = articles();
-    expect(list.length).toBe(5);
+    expect(list.length).toBe(ctx.api.Store.SEED_ARTICLES.length + 1);
     const created = list.find(a => a.title === '即場貼的文章');
     expect(created).toBeTruthy();
     expect(created.text).toBe('我今日好開心。');
@@ -189,7 +189,7 @@ describe('T13.2 · TeacherUI 標詞編輯', () => {
     doc().getElementById('edit-title').value = '空文章';
     doc().getElementById('btn-save-article').click();
 
-    expect(articles().length).toBe(4);          // 冇加多
+    expect(articles().length).toBe(ctx.api.Store.SEED_ARTICLES.length);   // 冇加多
     expect(doc().getElementById('toast').textContent).toContain('空');
   });
 
@@ -324,7 +324,7 @@ describe('T13.4 · TeacherUI 匯入 / 匯出', () => {
     expect(ta).toBeTruthy();
     const parsed = JSON.parse(ta.value);
     expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.length).toBe(4);
+    expect(parsed.length).toBe(ctx.api.Store.SEED_ARTICLES.length);
   });
 
   it('T13.4b 匯入壞 JSON → 提示錯誤 + 唔改資料', async () => {

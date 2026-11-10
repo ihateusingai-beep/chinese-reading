@@ -21,7 +21,7 @@ const firstArticle = () => ctx.api.Store.getArticles()[0];
 describe('T12 · Hub（學生端首頁）', () => {
   it('T12.1 第一次開 app → 自動植入預設文章（全部 published）', () => {
     const articles = ctx.api.Store.getArticles();
-    expect(articles.length).toBe(4);
+    expect(articles.length).toBe(ctx.api.Store.SEED_ARTICLES.length);
     expect(articles.every(a => a.published === true)).toBe(true);
     expect(articles.map(a => a.title)).toContain('去茶餐廳');
   });
@@ -46,9 +46,27 @@ describe('T12 · Hub（學生端首頁）', () => {
     expect(ctx.api.Store.getArticles()).toEqual([]);
   });
 
+  it('T12.4b 舊版本裝置 → 只補上新增嗰批預設文章（唔會動老師自己嘅文章）', () => {
+    // 模擬「已經用緊舊版本」嘅裝置：內容版本 = 1，而且已經有老師自己嘅文章
+    ctx.win.localStorage.setItem('crSchemaVersion', '1');
+    const mine = { id: 'a_mine', title: '我自己嘅文章', type: 'life', text: '我嘅文章。', words: [], published: true };
+    ctx.api.Store.saveArticles([mine]);
+
+    const changed = ctx.api.Store.seedDefaults();
+    expect(changed, '應該補上新課文').toBe(true);
+
+    const list = ctx.api.Store.getArticles();
+    // 老師自己嘅文章仲喺度，冇被覆蓋
+    expect(list.find(a => a.id === 'a_mine')).toBeTruthy();
+    // 新課文補上咗
+    expect(list.find(a => a.id === 'a_seed_5'), '新課文《到餐廳去》應該補上').toBeTruthy();
+    // ⚠️ 舊批次嘅預設文章唔會復活（老師如果自己刪咗，唔會無故返嚟）
+    expect(list.find(a => a.id === 'a_seed_1')).toBeFalsy();
+  });
+
   it('T12.5 Hub 列出所有已發佈文章（大卡片）', () => {
     const cards = app().querySelectorAll('.article-card');
-    expect(cards.length).toBe(4);
+    expect(cards.length).toBe(ctx.api.Store.SEED_ARTICLES.length);
     expect(cards[0].textContent).toContain('去茶餐廳');
     // 每張卡都要有大掣（觸控區 ≥70px 喺 Tier 2 驗）
     expect(cards[0].tagName).toBe('BUTTON');
@@ -62,7 +80,7 @@ describe('T12 · Hub（學生端首頁）', () => {
 
     ctx.api.App.go('hub');
     const cards = app().querySelectorAll('.article-card');
-    expect(cards.length).toBe(3);
+    expect(cards.length).toBe(ctx.api.Store.SEED_ARTICLES.length - 1);
     expect(app().textContent).not.toContain(target.title);
   });
 

@@ -135,4 +135,18 @@ export const MUTANTS = [
     to: "  getArticle(id) {\n    localStorage.setItem('yueInline', 'x');\n    return this.getArticles().find(a => a.id === id) || null;\n  },",
     why: 'inline localStorage literal 冇 cr* 前綴 → T8.4（只查 KEY_* 常數）捉唔到',
   },
+  {
+    id: 'M21',
+    covers: ['S22'],
+    from: '.tok.word{width:auto;',
+    to: '.tok.word{width:1.15em;',
+    why: '多字詞 token 用固定一個字格嘅闊度 → 3–4 字詞溢出容器、文字互相覆蓋（學生撳唔到被蓋住嘅字）',
+  },
+  {
+    id: 'M22',
+    covers: ['S22'],
+    from: '.tok.word .g{width:1.15em;',
+    to: '.tok.word .g{width:auto;',
+    why: '詞內字格唔固定 → 詞內每個字闊度唔一，網格錯位、放大會蓋住鄰字',
+  },
 ];

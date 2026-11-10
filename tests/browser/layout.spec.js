@@ -107,6 +107,72 @@ test.describe('Tier 2 · 真實瀏覽器版面驗證', () => {
     expect(await page.evaluate(() => window.__spoken)).toContain('和');
   });
 
+  test('A5 課文《到餐廳去》→ 撳「三」讀成「三文治」（真實 offset 冇錯位）', async ({ page }) => {
+    await openHub(page);
+    await page.locator('#hub .article-card', { hasText: '到餐廳去' }).click();
+    await page.waitForSelector('#reading-area .tok');
+
+    // 「三文治」喺 code-point index 21-23 → 第 22 個字
+    await page.locator('#reading-area .g').nth(21).click();
+    await page.waitForTimeout(150);
+
+    const card = await page.textContent('#read-card');
+    expect(card).toContain('三文治');
+
+    // 而且 4 字嘅「爸爸媽媽」都對（index 0-3）
+    await page.locator('#reading-area .g').nth(1).click();
+    await page.waitForTimeout(150);
+    expect(await page.textContent('#read-card')).toContain('爸爸媽媽');
+  });
+
+  test('A6 多字詞 token：每個字同一行、冇溢出蓋住隔籬字（真 bug 回歸）', async ({ page }) => {
+    // ⚠️ 回歸真 bug（2026-11-10）：`.tok` 固定 width:1.15em 套落多字詞 token
+    //    → 詞嘅 3–4 個字喺 1.15em 闊嘅框入面「疊行」，文字溢出、互相覆蓋，
+    //    學生撳唔到被蓋住嘅字（A5 之前就係咁 timeout）。
+    //    jsdom 冇 layout engine → 呢類 bug 只有 Tier 2 捉得到。
+    await openHub(page);
+    await page.locator('#hub .article-card', { hasText: '到餐廳去' }).click();
+    await page.waitForSelector('#reading-area .tok');
+
+    const report = await page.$$eval('#reading-area .tok', toks =>
+      toks.map(tok => {
+        const gs = Array.from(tok.querySelectorAll('.g')).map(g => g.getBoundingClientRect());
+        const tops = gs.map(r => Math.round(r.top));
+        const tr = tok.getBoundingClientRect();
+        return {
+          type: tok.dataset.type,
+          n: gs.length,
+          clientH: Math.round(tok.clientHeight),
+          scrollH: Math.round(tok.scrollHeight),
+          sameLine: tops.length > 0 && tops.every(t => Math.abs(t - tops[0]) <= 2),
+          charsInside: gs.every(r => r.left >= tr.left - 1 && r.right <= tr.right + 1),
+        };
+      })
+    );
+
+    const words = report.filter(r => r.type === 'w');
+    expect(words.length, '課文應該有多字詞 token').toBeGreaterThan(0);
+    expect(words.some(w => w.n >= 3), '應該有 3 字或以上嘅詞（先捉到疊行嘅情況）').toBe(true);
+
+    for (const w of words) {
+      expect(w.sameLine, `多字詞 token 入面嘅字疊咗行（n=${w.n}）`).toBe(true);
+      expect(w.charsInside, `多字詞 token 嘅字溢出咗自己個框（n=${w.n}）`).toBe(true);
+      expect(w.scrollH, `多字詞 token 垂直溢出咗字格高度（n=${w.n}）`).toBeLessThanOrEqual(w.clientH + 2);
+    }
+
+    // 相鄰 token 喺同一行唔可以互相覆蓋（網格要乾淨）
+    const rects = await page.$$eval('#reading-area .tok', els =>
+      els.map(e => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top }; })
+    );
+    for (let i = 0; i + 1 < rects.length; i++) {
+      const a = rects[i];
+      const b = rects[i + 1];
+      if (Math.abs(a.t - b.t) <= 2) {
+        expect(a.r, `相鄰 token 重疊咗（#${i} → #${i + 1}）`).toBeLessThanOrEqual(b.l + 1);
+      }
+    }
+  });
+
   test('D1 字格觸控區：高度 ≥ 70px、闊度 ≥ 44px', async ({ page }) => {
     await openReader(page);
 

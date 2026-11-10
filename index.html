@@ -41,12 +41,18 @@ button:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 /* ---- 閱讀區（點讀）----
    ⚠️ 放大一定要用 transform: scale()，唔可以用 font-size ——
       改字級會觸發 reflow，成句字被推開，學生睇唔到自己撳咗邊個字。
-      固定 width:1.15em 字格保證放大唔會蓋住隔籬字嘅可見筆畫。 */
+      固定 width:1.15em 字格保證放大唔會蓋住隔籬字嘅可見筆畫。
+   ⚠️ 多字詞 token（class 名見下面詞 token 規則）唔可以跟單字用固定 1.15em 闊度：
+      3–4 字詞嘅內容（3–4 × 1em）會遠超容器 → 文字溢出、互相覆蓋，
+      學生撳唔到被蓋住嘅字（Playwright 會判定「被遮擋」而 timeout）。
+      → 詞 token 改用 width:auto（內容寬度），字格喺詞內逐字維護（每個 .g 都係 1.15em），
+      咁每個字仍然對齊同一個網格，冇重疊，放大亦唔會推走隔籬字。 */
 .tok{display:inline-block;width:1.15em;height:1.5em;line-height:1.5em;text-align:center;vertical-align:middle;border-radius:.18em;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .tok .g{display:inline-block;transition:transform .14s cubic-bezier(.34,1.56,.64,1),background .12s ease}
 .g.on{transform:scale(1.45)}
 .tok.on{background:#fef08a;outline:3px solid #f59e0b;outline-offset:1px}
-.tok.word{box-shadow:inset 0 -0.12em 0 #7c3aed}
+.tok.word{width:auto;white-space:nowrap;box-shadow:inset 0 -0.12em 0 #7c3aed}
+.tok.word .g{width:1.15em;text-align:center}
 .tok.word.on{background:#ddd6fe;outline-color:#7c3aed}
 .g.deep{color:#7c3aed;font-weight:700}
 .tok.punct{color:var(--muted-ink)}
@@ -133,7 +139,11 @@ select{width:100%;max-width:340px;min-height:70px;font-size:1.2em;padding:8px 12
 'use strict';
 
 window.__BUILD_ID = 'chinese-reading @ 2026-11-10';
-const _SCHEMA_VERSION = 1;
+// 內容版本 —— 每加一批預設文章就 +1。
+// 用嚟決定「要唔要補新嘅預設文章俾已經用緊嘅裝置」：
+//   已存版本 >= SEED_VERSION → 唔會再動（老師刪咗嘅預設文章唔會復活）
+//   已存版本 <  SEED_VERSION → 只補 seedVersion 大過已存版本嘅文章（唔會覆蓋老師改過嘅）
+const SEED_VERSION = 2;
 
 // 粵語預設語速（中度學生要比正常慢）—— 單一真相來源
 const DEFAULT_SPEECH_RATE = 0.75;
@@ -247,7 +257,7 @@ const Store = {
   //    老師可以自己貼更長嘅文章（見 Teacher 新增文章）。
   SEED_ARTICLES: [
     {
-      id: 'a_seed_1', title: '去茶餐廳', type: 'life',
+      id: 'a_seed_1', seedVersion: 1, createdAt: '2026-01-01T00:00:00.000Z', title: '去茶餐廳', type: 'life',
       text: '我今天和爸爸媽媽去了茶餐廳吃飯。我們叫了兩杯奶茶和一個菠蘿包。爸爸說明天再來。',
       words: [
         { start: 6, len: 2, text: '媽媽' },
@@ -259,7 +269,7 @@ const Store = {
       ],
     },
     {
-      id: 'a_seed_2', title: '去公園', type: 'life',
+      id: 'a_seed_2', seedVersion: 1, createdAt: '2026-01-01T00:00:00.000Z', title: '去公園', type: 'life',
       text: '星期天早上，爸爸帶我去公園。我們看到很多小鳥和大樹。我在公園跑了很多圈。',
       words: [
         { start: 0, len: 3, text: '星期天' },
@@ -270,7 +280,7 @@ const Store = {
       ],
     },
     {
-      id: 'a_seed_3', title: '小雨人', type: 'poem',
+      id: 'a_seed_3', seedVersion: 1, createdAt: '2026-01-01T00:00:00.000Z', title: '小雨人', type: 'poem',
       text: '小雨滴，滴答滴答落。下雨了，我要帶遮。媽媽說，等雨停了，我們就去公園。',
       words: [
         { start: 0, len: 3, text: '小雨滴' },
@@ -281,7 +291,7 @@ const Store = {
       ],
     },
     {
-      id: 'a_seed_4', title: '生日', type: 'life',
+      id: 'a_seed_4', seedVersion: 1, createdAt: '2026-01-01T00:00:00.000Z', title: '生日', type: 'life',
       text: '今日是我的生日。媽媽買了一個大蛋糕，全家人一起唱生日歌。我吹熄了蠟燭。',
       words: [
         { start: 5, len: 2, text: '生日' },
@@ -291,38 +301,91 @@ const Store = {
         { start: 32, len: 2, text: '蠟燭' },
       ],
     },
+    {
+      // 課文《到餐廳去》（2026-11-10 老師提供）—— 55 字、13 個重點詞
+      id: 'a_seed_5', seedVersion: 2, createdAt: '2026-11-10T00:00:00.000Z', title: '到餐廳去', type: 'prose',
+      text: '爸爸媽媽帶我們到餐廳去。爸爸喝咖啡，媽媽吃三文治。姐姐喝橙汁，我吃炒蛋。妹妹喝了汽水，呼了一口氣，大家笑哈哈！',
+      words: [
+        { start: 0, len: 4, text: '爸爸媽媽' },
+        { start: 5, len: 2, text: '我們' },
+        { start: 8, len: 2, text: '餐廳' },
+        { start: 12, len: 2, text: '爸爸' },
+        { start: 15, len: 2, text: '咖啡' },
+        { start: 18, len: 2, text: '媽媽' },
+        { start: 21, len: 3, text: '三文治' },
+        { start: 25, len: 2, text: '姐姐' },
+        { start: 28, len: 2, text: '橙汁' },
+        { start: 33, len: 2, text: '炒蛋' },
+        { start: 36, len: 2, text: '妹妹' },
+        { start: 40, len: 2, text: '汽水' },
+        { start: 51, len: 3, text: '笑哈哈' },
+      ],
+    },
   ],
 
   /**
-   * 第一次開 app 時植入預設文章。
-   * ⚠️ 只喺 `crArticles` **完全唔存在** 時先植入 ——
-   *    老師如果自己清空咗文章庫，唔應該又自動生返一堆出嚟。
+   * 植入／補上預設文章。
+   *
+   * ⚠️ 語意（呢個係好易搞錯嘅地方）：
+   *   1. **全新安裝**（`crArticles` 唔存在）→ 植入全部預設文章
+   *   2. **已經用緊嘅裝置** → **只補上新增嗰批**（`seedVersion > 已存版本`），
+   *      老師自己加嘅文章、佢改過嘅內容、佢刪咗嘅舊預設文章，**全部唔會被掂**
+   *   3. **版本已經係最新** → 乜都唔做（老師清空咗文章庫都唔會自動生返）
+   *
+   * @returns {boolean} 有冇動過文章庫
    */
   seedDefaults() {
+    let storedVer = 0;
+    try {
+      storedVer = Number(localStorage.getItem(this.KEY_SCHEMA)) || 0;
+    } catch (e) {
+      return false;          // 私隱模式 → 唔好 crash
+    }
+    if (storedVer >= SEED_VERSION) return false;
+
     let raw = null;
     try {
       raw = localStorage.getItem(this.KEY_ARTICLES);
     } catch (e) {
-      return false;         // 私隱模式 → 冇 localStorage，唔好 crash
+      return false;
     }
-    if (raw !== null) return false;
 
-    const list = this.SEED_ARTICLES.map(a => ({
+    if (raw === null) {
+      // 全新安裝 → 植入全部
+      this.saveArticles(this.SEED_ARTICLES.map(a => this._cloneSeed(a)));
+    } else {
+      // 已有文章庫 → 只補新增嗰批
+      const list = this.getArticles();
+      const have = new Set(list.map(a => a.id));
+      let added = 0;
+      for (const a of this.SEED_ARTICLES) {
+        if (have.has(a.id)) continue;
+        if ((a.seedVersion || 1) <= storedVer) continue;   // 舊批次 → 唔好復活
+        list.push(this._cloneSeed(a));
+        added++;
+      }
+      if (added) this.saveArticles(list);
+    }
+
+    try {
+      localStorage.setItem(this.KEY_SCHEMA, String(SEED_VERSION));
+    } catch (e) {
+      // 寫唔到版本號唔要緊（下次會再試一次）
+    }
+    return true;
+  },
+
+  _cloneSeed(a) {
+    return {
       id: a.id,
       title: a.title,
       type: a.type,
       text: a.text,
       words: a.words.map(w => ({ start: w.start, len: w.len, text: w.text })),
-      createdAt: '2026-01-01T00:00:00.000Z',
+      createdAt: a.createdAt || '2026-01-01T00:00:00.000Z',
       published: true,
-    }));
-    this.saveArticles(list);
-    try {
-      localStorage.setItem(this.KEY_SCHEMA, String(_SCHEMA_VERSION));
-    } catch (e) {
-      // 寫唔到 schema version 唔要緊
-    }
-    return true;
+      seedVersion: a.seedVersion || 1,
+    };
   },
 };
 

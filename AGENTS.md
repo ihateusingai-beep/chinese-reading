@@ -13,7 +13,7 @@
 | 項目 | 值 |
 |---|---|
 | Path | `/Users/kencheng/workspace/vs code/education/chinese/chinese-reading/` |
-| Status | **M0/M1 完成 + 已部署**（166 Tier 1 + 13 Tier 2 全綠）；App 四個 view 已通 |
+| Status | **M0/M1 完成 + 已部署**（174 Tier 1 + 16 Tier 2 全綠）；App 四個 view 已通 |
 | Design doc | `DESIGN.md`（v0.1） |
 | Live URL | **https://ihateusingai-beep.github.io/chinese-reading/**（GitHub Pages，公開） |
 | Repo | https://github.com/ihateusingai-beep/chinese-reading（public，`main`） |
@@ -108,6 +108,8 @@ Article = {
 | T19 | **喺有可見文字嘅元素上加 `aria-label`** → axe `label-content-name-mismatch`（serious）—— accessible name 要包含可見文字 | 唔好喺卡片／按鈕加 aria-label；改用 `title`（tooltip），可見文字做 accessible name |
 | T20 | **`display:none` 嘅元素 `getBoundingClientRect()` 高度係 0** → 觸控區驗收線會誤報 | 量觸控區時要跳過高度 = 0 嘅（睇唔見 = 撳唔到 = 唔算觸控目標） |
 | T21 | **對話框（`role="dialog"`）冇 accessible name** → axe `aria-dialog-name`（serious） | `aria-labelledby="modal-title"` + 標題元素要有 `id` |
+| T22 | **`.tok` 固定 `width:1.15em` 套落多字詞 token** → 3–4 字詞嘅字喺 1.15em 框入面「疊行」、文字溢出互相覆蓋 → **學生撳唔到被蓋住嘅字**（Playwright 判定「被遮擋」→ timeout，唔係測試寫法問題） | 詞 token 改 `width:auto`（內容寬度）+ 詞內每個 `.g` 維持 `1.15em` 字格；守門 **S22** + mutant **M21/M22**，Tier 2 **A6** 驗冇疊行 |
+| T23 | **破壞驗證腳本嘅錨點會過期 → 靜靜變成「假綠」**（改壞根本冇發生，腳本照樣印「測試全綠」，睇落完全正常） | 三個 `tools/verify-*.sh` 全部改成**自我驗證**：錨點搵唔到 → ❌ + `exit 1`；改壞之後指定嗰層測試冇變紅 → ❌ + `exit 1`；每輪標明期望層級 |
 
 ---
 
@@ -137,17 +139,22 @@ Article = {
    （新增 `Sha256` `Auth` `Hub` `TeacherUI` 四個模組 + T11/T12/T13 三個測試檔，55 個測試）
 8. ✅ **`git init` + GitHub Pages 部署** → https://ihateusingai-beep.github.io/chinese-reading/
    （公開 repo；線上檔案同本地**逐 byte 一致** + 結構斷言全過，已驗證）
-9. ⬜ **學校實機測試**（iPad + Windows 平板）— 驗證 R1 ⬅️ **M1 ship 硬門檻，仲未做**
+9. ✅ **老師即場輸入文章 + 字級設定加細 + 老師密碼 `230714`**
+10. ✅ **課文《到餐廳去》**（55 code points、13 個詞）＋ **內容版本機制**
+    （`SEED_VERSION` + 每篇 `seedVersion`：新課文會補落舊裝置，但老師刪過嘅舊預設文章唔會復活）
+11. ✅ **多字詞版面 bug 修正**（T22）：詞 token `width:auto` + 詞內每個 `.g` 維持 `1.15em` 字格
+    → 之前 3–4 字詞會疊行重疊、學生撳唔到被蓋住嘅字（新增 S22 / M21 / M22 / Tier 2 A6）
+12. ⬜ **學校實機測試**（iPad + Windows 平板）— 驗證 R1 ⬅️ **M1 ship 硬門檻，仲未做**
 
 ### 已實作模組（全部喺 `index.html` 單檔內）
 
 | 模組 | 狀態 | 內容 |
 |---|---|---|
-| `Store` | ✅ | settings + 文章庫 CRUD（`cr*` keys）+ 預設文章植入 + 進度記錄 |
+| `Store` | ✅ | settings + 文章庫 CRUD（`cr*` keys）+ 預設文章植入（**版本機制** `SEED_VERSION` + 每篇 `seedVersion`）+ 進度記錄 |
 | `Voice` | ✅ | zh-HK TTS、voice 偵測（`voiceschanged` + 1500ms timeout）、`seqGen` generation counter |
 | `Tokenizer` | ✅ | code-point index（`Array.from`）、`validate()`、五種失效原因 |
 | `Sequence` | ✅ | 串行播放、標點停頓、雙層 generation guard |
-| `Reader` | ✅ | 渲染、點擊、詞優先發音、讀音小卡（`ensureCard()` 單一真相來源）、固定 `1.15em` 字格 + `transform: scale(1.45)` |
+| `Reader` | ✅ | 渲染、點擊、詞優先發音、讀音小卡（`ensureCard()` 單一真相來源）、固定 `1.15em` 字格 + `transform: scale(1.45)`、**多字詞 token 用內容寬度（詞內字格逐字維護 —— 見 T22）** |
 | `Teacher` | ✅ | 標詞配對、**延長一字模式**、文章 CRUD、匯入匯出、失效詞標示 |
 | `Toast` / `Modal` | ✅ | `Toast.show()`（`role=status`）、`Modal.askConfirm()`、`Modal.askText()`（in-app 文字／密碼輸入） |
 | `Sha256` | ✅ | 純 JS SHA-256（**唔用** `crypto.subtle` —— 見 T18） |
@@ -158,18 +165,20 @@ Article = {
 
 ### 測試基建現況
 
-- `npm test` → vitest run（**171 tests / 14 files**）
-- `npm run test:browser` → Playwright Tier 2（**13 tests**，已裝 Chromium）
+- `npm test` → vitest run（**174 tests / 14 files**）
+- `npm run test:browser` → Playwright Tier 2（**16 tests**，已裝 Chromium）
 - `npm run guard:full` → Tier 1 + Tier 2
 - 依賴：vitest + jsdom + axe-core（**dev-only**，app 本身零依賴）
 - harness：`tests/harness.js` → 抽 `index.html` 嘅 inline script → 隔離 jsdom → `win.CR` 攞模組
 - app 必須喺尾行設 `window.CR = { App, Voice, Tokenizer, Sequence, Reader, Teacher, Toast, Modal, Store, Sha256, Auth, Hub, TeacherUI }`（TEST-PLAN §2.3 C1）
-- 守門三層：行為測試 → 結構斷言（`tests/structural.js`，**15 條** S2–S11/S17–S21）→
-  mutant 還原（`tests/mutants.js`，**18 個** M1–M9/M12–M20）→ meta 對齊（`tests/t10-meta.test.js`）
+- 守門三層：行為測試 → 結構斷言（`tests/structural.js`，**16 條** S2–S11/S17–S22）→
+  mutant 還原（`tests/mutants.js`，**20 個** M1–M9/M12–M22）→ meta 對齊（`tests/t10-meta.test.js`）
 - **自我驗證工具**（唔入 vitest，刻意唔依賴 vitest）：
   - `node tools/verify-guard.mjs` → 12 項，證明守門規則每個分支都有 mutant 守住
   - `bash tools/verify-teacher-guard.sh` → 3 輪真實改壞 Teacher 實作，確認 T5 測試會紅（做完自動還原）
   - `bash tools/verify-m0m1-guard.sh` → 9 輪真實改壞 M0/M1 新功能，確認 T11/T12/T13/T3 測試會紅（做完自動還原）
+  - `bash tools/verify-layout-guard.sh` → 2 輪真實改壞版面 CSS，確認 T7(S22) + Tier 2 A6 會紅（做完自動還原）
+  - ⚠️ 三個 `verify-*.sh` 都係**自我驗證**嘅：錨點搵唔到，或者改壞之後測試冇紅 → 會 ❌ + exit 1（T23）
   - `node tools/screenshot.mjs` → 影 6 張關鍵畫面（學生首頁／閱讀頁／老師文章庫／設定／新文章／標詞）到 `docs/screenshots/`
 
 ---
