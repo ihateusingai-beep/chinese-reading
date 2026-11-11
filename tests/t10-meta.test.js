@@ -26,6 +26,7 @@ const MODULE_TESTS = {
   Auth: 't11-auth.test.js',
   Hub: 't12-hub.test.js',
   TeacherUI: 't13-teacher-ui.test.js',
+  Appearance: 't14-appearance.test.js',
 };
 
 describe('T10 · mutant 覆蓋率對齊', () => {

@@ -11,6 +11,8 @@
   /* 文字用嘅深色版本：#f59e0b 喺淺底只有 2.05:1，達唔到 WCAG 3:1（axe 會捉到） */
   --gold-ink:#b45309; --muted-ink:#64748b;
   --ink:#1f2937; --bg:#f8fafc; --card:#ffffff; --line:#e2e8f0;
+  --hl-bg:#fef08a; --hl-border:#f59e0b;
+  --word-hl-bg:#ddd6fe; --word-hl-border:#7c3aed;
   --font-scale:1;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -69,13 +71,13 @@ button:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 .tok{display:inline-block;width:1.15em;height:1.5em;line-height:1.5em;text-align:center;vertical-align:middle;border-radius:.18em;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .tok .g{display:inline-block;transition:transform .14s cubic-bezier(.34,1.56,.64,1),background .12s ease}
 .g.on{transform:scale(1.45)}
-.tok.on{background:#fef08a;outline:3px solid #f59e0b;outline-offset:1px}
-.tok.word{width:auto;white-space:nowrap;box-shadow:inset 0 -0.12em 0 #7c3aed}
+.tok.on{background:var(--hl-bg);outline:3px solid var(--hl-border);outline-offset:1px}
+.tok.word{width:auto;white-space:nowrap;box-shadow:inset 0 -0.12em 0 var(--word-hl-border)}
 .tok.word .g{width:1.15em;text-align:center}
-.tok.word.on{background:#ddd6fe;outline-color:#7c3aed}
-.g.deep{color:#7c3aed;font-weight:700}
+.tok.word.on{background:var(--word-hl-bg);outline-color:var(--word-hl-border)}
+.g.deep{color:var(--word-hl-border);font-weight:700}
 .tok.punct{color:var(--muted-ink)}
-.reading{font-size:calc(48px * var(--font-scale));margin:12px 0;word-break:break-all}
+.reading{font-size:calc(48px * var(--font-scale));margin:12px 0;word-break:break-all;color:var(--ink)}
 #read-card{margin-top:12px;padding:8px 14px;border-radius:12px;background:#fff;border:2px dashed var(--sky);font-size:.9em;font-weight:700;display:inline-block}
 #read-card[hidden]{display:none}
 /* 減少動態：關閉彈跳動畫，但保留放大（放大係資訊，唔係裝飾） */
@@ -116,6 +118,23 @@ button:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 .btn-purple{background:var(--purple);color:#fff}
 .btn-danger{background:#fee2e2;color:#991b1b}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---- 外觀 toolbox（閱讀頁空白位）---- */
+.appear-box{margin-top:12px;border:2px dashed var(--line);border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.72)}
+.appear-toggle{width:100%}
+.appear-panel{margin-top:10px}
+.appear-panel[hidden]{display:none}
+.appear-label{display:block;font-weight:800;color:var(--purple);margin:10px 0 6px;font-size:.95em}
+.swatch-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.swatch{
+  width:52px;height:52px;min-width:52px;min-height:52px;border-radius:14px;
+  border:3px solid #cbd5e1;cursor:pointer;padding:0;flex:0 0 auto;
+  box-shadow:inset 0 0 0 1px rgba(15,23,42,.08);
+}
+.swatch[aria-checked="true"]{outline:3px solid var(--purple);outline-offset:2px;border-color:var(--purple)}
+.swatch:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+.appear-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.appear-actions button{flex:1 1 140px}
 
 /* ---- 老師端 ---- */
 .article-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:2px solid var(--line)}
@@ -163,7 +182,7 @@ select{width:100%;max-width:340px;min-height:70px;font-size:1.2em;padding:8px 12
 <script>
 'use strict';
 
-window.__BUILD_ID = 'chinese-reading @ 2026-11-11-puichi-logo';
+window.__BUILD_ID = 'chinese-reading @ 2026-11-11-appear-toolbox';
 // 內容版本 —— 每加一批預設文章就 +1。
 // 用嚟決定「要唔要補新嘅預設文章俾已經用緊嘅裝置」：
 //   已存版本 >= SEED_VERSION → 唔會再動（老師刪咗嘅預設文章唔會復活）
@@ -186,6 +205,58 @@ const FONT_PRESETS = [
   { label: '特大', value: 1.7 },
 ];
 
+// 外觀預設（SEN：只提供安全對比色掣，唔開自由色輪）
+const DEFAULT_APPEARANCE = {
+  inkColor: '#1f2937',
+  bgColor: '#f8fafc',
+  highlightBg: '#fef08a',
+  highlightBorder: '#f59e0b',
+  wordHighlightBg: '#ddd6fe',
+  wordHighlightBorder: '#7c3aed',
+};
+const INK_PALETTE = [
+  { label: '墨黑', value: '#1f2937' },
+  { label: '深藍', value: '#1e3a8a' },
+  { label: '深紫', value: '#4c1d95' },
+  { label: '深綠', value: '#14532d' },
+  { label: '咖啡', value: '#78350f' },
+  { label: '炭灰', value: '#334155' },
+];
+const BG_PALETTE = [
+  { label: '淺灰', value: '#f8fafc' },
+  { label: '米白', value: '#fff7ed' },
+  { label: '淺綠', value: '#ecfdf5' },
+  { label: '淺黃', value: '#fefce8' },
+  { label: '淺藍', value: '#eff6ff' },
+  { label: '淺粉', value: '#fdf2f8' },
+];
+const HIGHLIGHT_PALETTE = [
+  { label: '黃', bg: '#fef08a', border: '#f59e0b', wordBg: '#ddd6fe', wordBorder: '#7c3aed' },
+  { label: '橙', bg: '#ffedd5', border: '#ea580c', wordBg: '#fed7aa', wordBorder: '#c2410c' },
+  { label: '綠', bg: '#bbf7d0', border: '#16a34a', wordBg: '#a7f3d0', wordBorder: '#059669' },
+  { label: '藍', bg: '#bfdbfe', border: '#2563eb', wordBg: '#c7d2fe', wordBorder: '#4f46e5' },
+  { label: '粉', bg: '#fbcfe8', border: '#db2777', wordBg: '#f9a8d4', wordBorder: '#be185d' },
+  { label: '紫', bg: '#ddd6fe', border: '#7c3aed', wordBg: '#c4b5fd', wordBorder: '#6d28d9' },
+];
+
+function defaultSettings() {
+  return {
+    rate: DEFAULT_SPEECH_RATE,
+    fontScale: 1,
+    wordPriority: true,
+    inkColor: DEFAULT_APPEARANCE.inkColor,
+    bgColor: DEFAULT_APPEARANCE.bgColor,
+    highlightBg: DEFAULT_APPEARANCE.highlightBg,
+    highlightBorder: DEFAULT_APPEARANCE.highlightBorder,
+    wordHighlightBg: DEFAULT_APPEARANCE.wordHighlightBg,
+    wordHighlightBorder: DEFAULT_APPEARANCE.wordHighlightBorder,
+  };
+}
+
+function isHexColor(v) {
+  return typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v);
+}
+
 // ==================== STORE ====================
 // localStorage 層：全部 key 用 cr* 前綴，唔會撞 reading-para 嘅 yue*
 const Store = {
@@ -194,23 +265,29 @@ const Store = {
   KEY_SETTINGS: 'crSettings',
   KEY_PROGRESS: 'crProgress',
   KEY_TEACHER_PASS: 'crTeacherPassHash',
-  settings: {
-    rate: DEFAULT_SPEECH_RATE,
-    fontScale: 1,
-    wordPriority: true,
-  },
+  settings: defaultSettings(),
   load() {
     try {
       const raw = localStorage.getItem(this.KEY_SETTINGS);
       if (raw) {
         const parsed = JSON.parse(raw);
-        this.settings = Object.assign({}, this.settings, parsed);
+        this.settings = Object.assign(defaultSettings(), parsed);
+        this.sanitizeAppearance();
       }
     } catch (e) {
       // 壞 JSON / 私隱模式 → 用預設值，唔好 crash
-      this.settings = { rate: DEFAULT_SPEECH_RATE, fontScale: 1, wordPriority: true };
+      this.settings = defaultSettings();
     }
     return this.settings;
+  },
+  sanitizeAppearance() {
+    const s = this.settings;
+    if (!isHexColor(s.inkColor)) s.inkColor = DEFAULT_APPEARANCE.inkColor;
+    if (!isHexColor(s.bgColor)) s.bgColor = DEFAULT_APPEARANCE.bgColor;
+    if (!isHexColor(s.highlightBg)) s.highlightBg = DEFAULT_APPEARANCE.highlightBg;
+    if (!isHexColor(s.highlightBorder)) s.highlightBorder = DEFAULT_APPEARANCE.highlightBorder;
+    if (!isHexColor(s.wordHighlightBg)) s.wordHighlightBg = DEFAULT_APPEARANCE.wordHighlightBg;
+    if (!isHexColor(s.wordHighlightBorder)) s.wordHighlightBorder = DEFAULT_APPEARANCE.wordHighlightBorder;
   },
   saveSettings() {
     try {
@@ -2053,6 +2130,20 @@ const TeacherUI = {
 
     body.appendChild(card);
 
+    // ---- 外觀（同閱讀頁 toolbox 共用 Appearance）----
+    const appearCard = document.createElement('div');
+    appearCard.className = 'card';
+    appearCard.id = 'teacher-appear-card';
+    const appearTitle = document.createElement('p');
+    appearTitle.className = 't-title';
+    appearTitle.textContent = '🎨 外觀（字色／背景／高亮）';
+    appearCard.appendChild(appearTitle);
+    const appearPanel = document.createElement('div');
+    appearPanel.id = 'teacher-appear-panel';
+    Appearance.fillControls(appearPanel, { showFont: false, open: true });
+    appearCard.appendChild(appearPanel);
+    body.appendChild(appearCard);
+
     // ---- 密碼 ----
     const pw = document.createElement('div');
     pw.className = 'card';
@@ -2298,6 +2389,256 @@ const TeacherUI = {
   },
 };
 
+// ==================== APPEARANCE ====================
+// 外觀 toolbox：字色 / 背景 / 高亮 / 字級（SEN 安全 palette）
+const Appearance = {
+  apply() {
+    const s = Store.settings;
+    const root = document.documentElement;
+    if (!root || !root.style) return;
+    root.style.setProperty('--font-scale', String(s.fontScale || 1));
+    root.style.setProperty('--ink', s.inkColor || DEFAULT_APPEARANCE.inkColor);
+    root.style.setProperty('--bg', s.bgColor || DEFAULT_APPEARANCE.bgColor);
+    root.style.setProperty('--hl-bg', s.highlightBg || DEFAULT_APPEARANCE.highlightBg);
+    root.style.setProperty('--hl-border', s.highlightBorder || DEFAULT_APPEARANCE.highlightBorder);
+    root.style.setProperty('--word-hl-bg', s.wordHighlightBg || DEFAULT_APPEARANCE.wordHighlightBg);
+    root.style.setProperty('--word-hl-border', s.wordHighlightBorder || DEFAULT_APPEARANCE.wordHighlightBorder);
+    if (document.body && document.body.style) {
+      document.body.style.background = s.bgColor || DEFAULT_APPEARANCE.bgColor;
+      document.body.style.color = s.inkColor || DEFAULT_APPEARANCE.inkColor;
+    }
+  },
+
+  setInk(color) {
+    if (!isHexColor(color)) return false;
+    Store.settings.inkColor = color;
+    Store.saveSettings();
+    this.apply();
+    this.syncSwatches();
+    return true;
+  },
+
+  setBg(color) {
+    if (!isHexColor(color)) return false;
+    Store.settings.bgColor = color;
+    Store.saveSettings();
+    this.apply();
+    this.syncSwatches();
+    return true;
+  },
+
+  setHighlight(item) {
+    if (!item || !isHexColor(item.bg) || !isHexColor(item.border)) return false;
+    Store.settings.highlightBg = item.bg;
+    Store.settings.highlightBorder = item.border;
+    Store.settings.wordHighlightBg = isHexColor(item.wordBg) ? item.wordBg : item.bg;
+    Store.settings.wordHighlightBorder = isHexColor(item.wordBorder) ? item.wordBorder : item.border;
+    Store.saveSettings();
+    this.apply();
+    this.syncSwatches();
+    return true;
+  },
+
+  reset() {
+    const keepRate = Store.settings.rate;
+    const keepWord = Store.settings.wordPriority;
+    Store.settings = defaultSettings();
+    Store.settings.rate = keepRate;
+    Store.settings.wordPriority = keepWord;
+    Store.saveSettings();
+    this.apply();
+    this.syncSwatches();
+    const label = document.getElementById('font-scale-label');
+    if (label) label.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
+    const fsInput = document.getElementById('set-font');
+    const fsVal = document.getElementById('set-font-val');
+    if (fsInput) fsInput.value = String(Store.settings.fontScale);
+    if (fsVal) fsVal.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
+  },
+
+  syncSwatches(root) {
+    const scope = root || document;
+    const s = Store.settings;
+    scope.querySelectorAll('.swatch[data-kind="ink"]').forEach((btn) => {
+      btn.setAttribute('aria-checked', btn.dataset.value === s.inkColor ? 'true' : 'false');
+    });
+    scope.querySelectorAll('.swatch[data-kind="bg"]').forEach((btn) => {
+      btn.setAttribute('aria-checked', btn.dataset.value === s.bgColor ? 'true' : 'false');
+    });
+    scope.querySelectorAll('.swatch[data-kind="hl"]').forEach((btn) => {
+      btn.setAttribute('aria-checked', btn.dataset.bg === s.highlightBg ? 'true' : 'false');
+    });
+  },
+
+  _mkSwatch({ kind, value, bg, border, label, title, onPick }) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.dataset.kind = kind;
+    if (value) b.dataset.value = value;
+    if (bg) b.dataset.bg = bg;
+    if (border) b.dataset.border = border;
+    b.title = title || label || '';
+    b.setAttribute('aria-label', label || title || '色');
+    b.setAttribute('aria-checked', 'false');
+    b.style.background = bg || value || '#fff';
+    if (border) b.style.boxShadow = `inset 0 0 0 4px ${border}`;
+    b.addEventListener('click', onPick);
+    return b;
+  },
+
+  /** 閱讀頁 / 老師設定共用外觀 panel 內容 */
+  fillControls(panel, { showFont = true, open = true } = {}) {
+    panel.innerHTML = '';
+    panel.classList.add('appear-panel');
+    if (!open) panel.hidden = true;
+
+    const inkLab = document.createElement('span');
+    inkLab.className = 'appear-label';
+    inkLab.textContent = '字色';
+    const inkRow = document.createElement('div');
+    inkRow.className = 'swatch-row';
+    inkRow.id = 'appear-ink-row';
+    for (const p of INK_PALETTE) {
+      inkRow.appendChild(this._mkSwatch({
+        kind: 'ink', value: p.value, label: p.label, title: `字色：${p.label}`,
+        onPick: () => { this.setInk(p.value); Toast.show(`字色：${p.label}`); },
+      }));
+    }
+    panel.appendChild(inkLab);
+    panel.appendChild(inkRow);
+
+    const bgLab = document.createElement('span');
+    bgLab.className = 'appear-label';
+    bgLab.textContent = '背景';
+    const bgRow = document.createElement('div');
+    bgRow.className = 'swatch-row';
+    bgRow.id = 'appear-bg-row';
+    for (const p of BG_PALETTE) {
+      bgRow.appendChild(this._mkSwatch({
+        kind: 'bg', value: p.value, label: p.label, title: `背景：${p.label}`,
+        onPick: () => { this.setBg(p.value); Toast.show(`背景：${p.label}`); },
+      }));
+    }
+    panel.appendChild(bgLab);
+    panel.appendChild(bgRow);
+
+    const hlLab = document.createElement('span');
+    hlLab.className = 'appear-label';
+    hlLab.textContent = '高亮';
+    const hlRow = document.createElement('div');
+    hlRow.className = 'swatch-row';
+    hlRow.id = 'appear-hl-row';
+    for (const p of HIGHLIGHT_PALETTE) {
+      hlRow.appendChild(this._mkSwatch({
+        kind: 'hl', bg: p.bg, border: p.border, label: p.label, title: `高亮：${p.label}`,
+        onPick: () => { this.setHighlight(p); Toast.show(`高亮：${p.label}`); },
+      }));
+    }
+    panel.appendChild(hlLab);
+    panel.appendChild(hlRow);
+
+    if (showFont) {
+      const fsLab = document.createElement('span');
+      fsLab.className = 'appear-label';
+      fsLab.textContent = '字級';
+      const fsRow = document.createElement('div');
+      fsRow.className = 'setting-row';
+      const fsInput = document.createElement('input');
+      fsInput.type = 'range';
+      fsInput.id = 'appear-font';
+      fsInput.min = String(FONT_SCALE_MIN);
+      fsInput.max = String(FONT_SCALE_MAX);
+      fsInput.step = String(FONT_SCALE_STEP);
+      fsInput.value = String(Store.settings.fontScale);
+      const fsVal = document.createElement('span');
+      fsVal.className = 'v';
+      fsVal.id = 'appear-font-val';
+      fsVal.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
+      fsInput.addEventListener('input', () => {
+        TeacherUI._applyFontScale(Number(fsInput.value), fsInput, fsVal);
+        const label = document.getElementById('font-scale-label');
+        if (label) label.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
+        const setFont = document.getElementById('set-font');
+        const setVal = document.getElementById('set-font-val');
+        if (setFont) setFont.value = String(Store.settings.fontScale);
+        if (setVal) setVal.textContent = Math.round((Number(Store.settings.fontScale) || 1) * 100) + '%';
+      });
+      fsRow.appendChild(fsInput);
+      fsRow.appendChild(fsVal);
+      panel.appendChild(fsLab);
+      panel.appendChild(fsRow);
+
+      const presets = document.createElement('div');
+      presets.className = 'btn-row';
+      for (const preset of FONT_PRESETS) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-ghost';
+        b.textContent = preset.label;
+        b.title = `${preset.label}（${Math.round(preset.value * 100)}%）`;
+        b.addEventListener('click', () => {
+          TeacherUI._applyFontScale(preset.value, fsInput, fsVal);
+          const label = document.getElementById('font-scale-label');
+          if (label) label.textContent = Math.round(preset.value * 100) + '%';
+          Toast.show(`字級：${preset.label}`);
+        });
+        presets.appendChild(b);
+      }
+      panel.appendChild(presets);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'appear-actions';
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'btn-ghost';
+    reset.id = 'btn-appear-reset';
+    reset.textContent = '↩ 還原預設';
+    reset.addEventListener('click', () => {
+      this.reset();
+      Toast.show('已還原預設外觀');
+      // 若 panel 仲開住，重建 controls 令 slider 同步
+      if (panel.isConnected) this.fillControls(panel, { showFont, open: true });
+    });
+    actions.appendChild(reset);
+    panel.appendChild(actions);
+
+    this.syncSwatches(panel);
+    return panel;
+  },
+
+  /** 閱讀頁 toolbox shell */
+  mountReaderToolbox(parent) {
+    const box = document.createElement('div');
+    box.className = 'appear-box';
+    box.id = 'appear-box';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'btn-ghost appear-toggle';
+    toggle.id = 'btn-appear';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.textContent = '🎨 外觀';
+
+    const panel = document.createElement('div');
+    panel.id = 'appear-panel';
+    this.fillControls(panel, { showFont: true, open: false });
+
+    toggle.addEventListener('click', () => {
+      const open = panel.hidden;
+      panel.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.textContent = open ? '🎨 收起外觀' : '🎨 外觀';
+    });
+
+    box.appendChild(toggle);
+    box.appendChild(panel);
+    parent.appendChild(box);
+    return box;
+  },
+};
+
 // ==================== APP ====================
 let _initPromise = null;      // App.init() 冪等：harness 同 DOMContentLoaded 都會叫
 
@@ -2314,6 +2655,7 @@ const App = {
       const state = await Voice.init();
       this.renderVoiceBanner(state);
       this.applyFontScale();
+      Appearance.apply();
       this.go('hub');
       return state;
     })();
@@ -2323,6 +2665,7 @@ const App = {
   applyFontScale() {
     const el = document.documentElement;
     if (el && el.style) el.style.setProperty('--font-scale', String(Store.settings.fontScale || 1));
+    Appearance.apply();
   },
 
   renderVoiceBanner(state) {
@@ -2451,6 +2794,9 @@ const App = {
     // 讀音小卡放喺閱讀區同工具列之間（由 Reader 擁有 markup —— 單一真相來源）
     Reader.ensureCard(card, toolbar);
 
+    // 空白位：外觀 toolbox（字色 / 背景 / 高亮 / 字級）
+    Appearance.mountReaderToolbox(card);
+
     wrap.appendChild(card);
     app.appendChild(wrap);
 
@@ -2482,13 +2828,17 @@ const App = {
     this.applyFontScale();
     const label = document.getElementById('font-scale-label');
     if (label) label.textContent = Math.round(next * 100) + '%';
+    const appearFont = document.getElementById('appear-font');
+    const appearVal = document.getElementById('appear-font-val');
+    if (appearFont) appearFont.value = String(next);
+    if (appearVal) appearVal.textContent = Math.round(next * 100) + '%';
   },
 };
 
 // harness 用：所有模組喺呢度匯出（docs/TEST-PLAN.md §2.3 C1）
 window.CR = {
   App, Voice, Tokenizer, Sequence, Reader, Teacher, Toast, Modal, Store,
-  Sha256, Auth, Hub, TeacherUI,
+  Sha256, Auth, Hub, TeacherUI, Appearance,
 };
 
 // 真實瀏覽器嘅啟動入口。
