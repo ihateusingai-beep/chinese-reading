@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#7DD3FC">
-<title>互動中文閱讀 · 點讀</title>
+<title>互動中文閱讀 · 點讀｜將軍澳培智學校</title>
 <style>
 :root{
   --sky:#7DD3FC; --purple:#7c3aed; --gold:#f59e0b; --green:#22c55e; --red:#ef4444;
@@ -23,6 +23,25 @@ body{
   -webkit-text-size-adjust:100%;
 }
 .wrap{max-width:900px;margin:0 auto;padding:16px}
+/* 頂欄：培智校徽 + 校名 + 工具名（教育 project 硬規） */
+.school-brand{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:0 0 12px;padding:10px 12px;border-radius:16px;
+  background:#fff;border:2px solid var(--line);
+}
+.school-brand .logo{
+  width:56px;height:56px;object-fit:contain;flex:0 0 auto;
+  border-radius:12px;background:#fff;border:2px solid #bfdbfe;
+}
+.school-brand .brand-text{text-align:left;min-width:0}
+.school-brand .school-name{
+  font-size:clamp(1.05rem,3.2vw,1.35rem);font-weight:900;color:#1e40af;
+  line-height:1.2;margin:0;
+}
+.school-brand .app-title{
+  font-size:clamp(.95rem,2.6vw,1.15rem);font-weight:800;color:var(--gold-ink);
+  line-height:1.25;margin:.15em 0 0;
+}
 h1{font-size:1.6em;color:var(--gold-ink);text-align:center;margin:.2em 0 .6em}
 button{
   font-size:1.4em;padding:18px 32px;border-radius:16px;border:none;
@@ -130,7 +149,13 @@ select{width:100%;max-width:340px;min-height:70px;font-size:1.2em;padding:8px 12
 </head>
 <body>
 <div class="wrap">
-  <h1>📖 互動中文閱讀</h1>
+  <header class="school-brand">
+    <img class="logo" src="assets/puichi-logo.png" alt="將軍澳培智學校校徽" width="56" height="56" decoding="async">
+    <div class="brand-text">
+      <p class="school-name">將軍澳培智學校</p>
+      <h1 class="app-title">📖 互動中文閱讀 · 點讀</h1>
+    </div>
+  </header>
   <div id="voice-banner" hidden role="status" aria-live="polite"></div>
   <div id="app"><p class="muted">載入中…</p></div>
 </div>
@@ -138,7 +163,7 @@ select{width:100%;max-width:340px;min-height:70px;font-size:1.2em;padding:8px 12
 <script>
 'use strict';
 
-window.__BUILD_ID = 'chinese-reading @ 2026-11-10';
+window.__BUILD_ID = 'chinese-reading @ 2026-11-11-puichi-logo';
 // 內容版本 —— 每加一批預設文章就 +1。
 // 用嚟決定「要唔要補新嘅預設文章俾已經用緊嘅裝置」：
 //   已存版本 >= SEED_VERSION → 唔會再動（老師刪咗嘅預設文章唔會復活）
